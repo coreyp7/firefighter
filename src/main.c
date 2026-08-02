@@ -31,12 +31,10 @@ int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
 
-    SDL_Log("=== Firefighter Game Starting ===");
     initSDL();
 
     SDL_Window *window = SDL_CreateWindow("ff", 1080, 720, 0);
     if (!window) {
-        SDL_Log("Window creation failed: %s", SDL_GetError());
         cleanupSDL();
         return 1;
     }
@@ -46,7 +44,6 @@ int main(int argc, char *argv[]) {
     SDL_Texture *player_texture = NULL;
 
     if (!loadImage(renderer, &player_texture, "img/player.webp")) {
-        SDL_Log("Failed to load player texture");
         SDL_DestroyWindow(window);
         cleanupSDL();
         return 1;
@@ -57,7 +54,6 @@ int main(int argc, char *argv[]) {
     uint32 last_state_update = SDL_GetTicks();
 
     SDL_ShowWindow(window);
-    SDL_Log("Player starting position: (%.1f, %.1f)", player.x, player.y);
     init_water_particles();
 
     while(isRunning){
@@ -89,7 +85,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    SDL_Log("=== Game Shutting Down ===");
     SDL_DestroyTexture(player_texture);
     SDL_DestroyWindow(window);
     cleanupSDL();
@@ -100,14 +95,12 @@ int main(int argc, char *argv[]) {
 
 bool initSDL(void) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_Log("SDL initialization failed: %s", SDL_GetError());
         return false;
     }
 
     // sdl3 doesn't require init anymore? look into this.
     // int imgFlags = IMG_INIT_PNG;
     // if (!(IMG_Init(imgFlags) & imgFlags)) {
-    //     SDL_Log("SDL_image initialization failed: %s", IMG_GetError());
     //     SDL_Quit();
     //     return false;
     // }
@@ -123,13 +116,11 @@ void cleanupSDL(void) {
 bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char *path) {
     SDL_Surface *img_surface = IMG_Load(path);
     if (!img_surface) {
-        SDL_Log("Failed to load image: %s", SDL_GetError());
         return false;
     }
 
     *texture = SDL_CreateTextureFromSurface(renderer, img_surface);
     if (!(*texture)) {
-        SDL_Log("Failed to create texture: %s", SDL_GetError());
         SDL_DestroySurface(img_surface);
         return false;
     }
@@ -161,14 +152,14 @@ void processInput(Player *player, bool *isRunning) {
     }
 
 
+    // Update player cursor with mouse
     float x, y;
     SDL_MouseButtonFlags state = SDL_GetMouseState(&x, &y);
     player->cursor_x = x;
     player->cursor_y = y;
 
+    // spacebar/water shoot
     const bool *key_states = SDL_GetKeyboardState(NULL);
-    int direction = 0;
-    /* (We're writing our code such that it sees both keys are pressed and cancels each other out!) */
     if (key_states[SDL_SCANCODE_SPACE]) {
         float dx = player->cursor_x - player->x;
         float dy = player->cursor_y - player->y;

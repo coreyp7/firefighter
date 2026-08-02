@@ -5,19 +5,17 @@
 
 #define GRAVITY 150.0f
 #define WATER_VELOCITY 300.0f
-#define WATER_LIFETIME 1.0f
+#define WATER_LIFETIME 7.0f
 
 static WaterParticle particles[MAX_WATER_PARTICLES];
 static int particle_count = 0;
 
 void init_water_particles(void) {
     particle_count = 0;
-    SDL_Log("Water particle system initialized");
 }
 
 void emit_water_particle(float x, float y, float angle) {
     if (particle_count >= MAX_WATER_PARTICLES) {
-        SDL_Log("WARNING: Particle limit reached!");
         return;
     }
 
@@ -29,7 +27,6 @@ void emit_water_particle(float x, float y, float angle) {
     p->max_life = WATER_LIFETIME;
     p->life = p->max_life;
     p->color = (SDL_FColor){0.2f, 0.8f, 1.0f, 0.8f};
-    SDL_Log("Emitted water particle at (%.1f, %.1f) with angle %.2f", x, y, angle);
 }
 
 void update_water_particles(float dt) {
@@ -42,8 +39,9 @@ void update_water_particles(float dt) {
 
         p->life -= dt;
 
+        // TODO: update this with a memory arena of some kind.
+        // Maybe even just a linear arena. Idk.
         if (p->life <= 0) {
-            SDL_Log("Removing dead particle %d", i);
             particles[i] = particles[--particle_count];
             i--;
         }
@@ -67,5 +65,4 @@ void render_water_particles(SDL_Renderer *renderer) {
 
 void cleanup_water_particles(void) {
     particle_count = 0;
-    SDL_Log("Water particle system cleaned up");
 }
