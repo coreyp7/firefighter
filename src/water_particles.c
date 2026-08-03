@@ -87,6 +87,16 @@ void render_water_particles(SDL_Renderer *renderer) {
     }
 }
 
+int get_active_water_particle_count(void) {
+    int active_count = 0;
+    for (int i = 0; i < particle_count; i++) {
+        if (particles[i].active) {
+            active_count++;
+        }
+    }
+    return active_count;
+}
+
 void cleanup_water_particles(void) {
     particle_count = 0;
 }

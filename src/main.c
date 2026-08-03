@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "water_particles.h"
+#include "debug.h"
 
 typedef uint32_t uint32;
 
@@ -62,6 +63,7 @@ int main(int argc, char *argv[]) {
 
     SDL_ShowWindow(window);
     init_water_particles();
+    init_debug(renderer);
 
     while(isRunning){
         uint32 start_ticks = SDL_GetTicks();
@@ -95,11 +97,12 @@ int main(int argc, char *argv[]) {
 
         render_water_stream(renderer);
 
-
-        SDL_RenderPresent(renderer);
-
         // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;
+        int active_particles = get_active_water_particle_count();
+        debug_render(renderer, (float)time_of_frame, active_particles);
+
+        SDL_RenderPresent(renderer);
         uint32 required_length_of_frame = 1000.0 / 60.0; // 60 fps
         if(time_of_frame < required_length_of_frame){
             uint32 time_to_wait = required_length_of_frame - time_of_frame;
@@ -111,6 +114,7 @@ int main(int argc, char *argv[]) {
     SDL_DestroyWindow(window);
     cleanupSDL();
     cleanup_water_particles();
+    cleanup_debug();
 
     return 0;
 }

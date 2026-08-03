@@ -21,5 +21,6 @@ void simulate_water_particles(float dt);
 void render_water_particles(SDL_Renderer *renderer);
 void shoot_water_particle(float x, float y, float angle);
 void cleanup_water_particles(void);
+int get_active_water_particle_count(void);
 
 #endif
