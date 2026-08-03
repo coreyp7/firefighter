@@ -49,6 +49,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    SDL_Texture *bush_sprite_sheet = NULL;
+    if (!loadImage(renderer, &bush_sprite_sheet, "img/bushes.png")) {
+        SDL_DestroyWindow(window);
+        cleanupSDL();
+        return 2;
+    }
+
     Player player = {50.0, 400.0, 0.0, 0.0};
     float dt = 0.0;
     uint32 last_state_update = SDL_GetTicks();
@@ -67,16 +74,31 @@ int main(int argc, char *argv[]) {
         last_state_update = SDL_GetTicks();
 
         update_player(&player, dt);
-        update_water_particles(dt);
+        simulate_water_particles(dt);
 
         // Render
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
         render_player(renderer, player_texture, &player);
+
+        SDL_FRect srcrect = {288, 32, 200, 180};
+        SDL_FRect destrect = {250, 75, 150, 150};
+        SDL_RenderTexture(
+            renderer,
+            bush_sprite_sheet,
+            &srcrect,
+            &destrect
+        );
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_RenderRect(renderer, &destrect);
+
         render_water_stream(renderer);
+
+
         SDL_RenderPresent(renderer);
 
+        // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;
         uint32 required_length_of_frame = 1000.0 / 60.0; // 60 fps
         if(time_of_frame < required_length_of_frame){
@@ -164,7 +186,7 @@ void processInput(Player *player, bool *isRunning) {
         float dx = player->cursor_x - player->x;
         float dy = player->cursor_y - player->y;
         float angle = atan2f(dx, dy);
-        emit_water_particle(player->x, player->y, angle);
+        shoot_water_particle(player->x, player->y, angle);
 
     }
 }

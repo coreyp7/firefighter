@@ -2,7 +2,7 @@
 CC = gcc
 
 # TODO: fix these paths; think I have SDL3 in homebrew
-CFLAGS = -Wall -Wextra -std=c11 -I/opt/homebrew/include/
+CFLAGS = -Wall -Wextra -std=c11 -Iinclude -I/opt/homebrew/include/
 LDFLAGS = -L/opt/homebrew/lib -lSDL3 -lSDL3_image -lSDL3_ttf
 TARGET = build/app
 SRC_DIR = src

@@ -3,8 +3,8 @@
 #include <math.h>
 #include <stdio.h>
 
-#define GRAVITY 150.0f
-#define WATER_VELOCITY 300.0f
+#define GRAVITY 500.0f
+#define WATER_VELOCITY 500.0f
 #define WATER_LIFETIME 7.0f
 
 static WaterParticle particles[MAX_WATER_PARTICLES];
@@ -12,26 +12,49 @@ static int particle_count = 0;
 
 void init_water_particles(void) {
     particle_count = 0;
+    for (int i = 0; i < MAX_WATER_PARTICLES; i++) {
+        particles[i].active = false;
+    }
 }
 
-void emit_water_particle(float x, float y, float angle) {
-    if (particle_count >= MAX_WATER_PARTICLES) {
+void shoot_water_particle(float x, float y, float angle) {
+    WaterParticle *p = NULL;
+
+    // Try to find an inactive slot first
+    for (int i = 0; i < particle_count; i++) {
+        if (!particles[i].active) {
+            p = &particles[i];
+            break;
+        }
+    }
+
+    // If no inactive slot found, allocate a new one
+    if (!p && particle_count < MAX_WATER_PARTICLES) {
+        p = &particles[particle_count++];
+    }
+
+    // If still no slot available, we're full
+    if (!p) {
         return;
     }
 
-    WaterParticle *p = &particles[particle_count++];
     p->x = x;
     p->y = y;
     p->vx = sinf(angle) * WATER_VELOCITY;
     p->vy = cosf(angle) * WATER_VELOCITY - 100.0f;
     p->max_life = WATER_LIFETIME;
     p->life = p->max_life;
+    p->active = true;
     p->color = (SDL_FColor){0.2f, 0.8f, 1.0f, 0.8f};
 }
 
-void update_water_particles(float dt) {
+void simulate_water_particles(float dt) {
     for (int i = 0; i < particle_count; i++) {
         WaterParticle *p = &particles[i];
+
+        if (!p->active) {
+            continue;
+        }
 
         p->vy += GRAVITY * dt;
         p->x += p->vx * dt;
@@ -39,17 +62,18 @@ void update_water_particles(float dt) {
 
         p->life -= dt;
 
-        // TODO: update this with a memory arena of some kind.
-        // Maybe even just a linear arena. Idk.
         if (p->life <= 0) {
-            particles[i] = particles[--particle_count];
-            i--;
+            p->active = false;
         }
     }
 }
 
 void render_water_particles(SDL_Renderer *renderer) {
     for (int i = 0; i < particle_count; i++) {
+        if (!particles[i].active) {
+            continue;
+        }
+
         // float alpha = particles[i].life / particles[i].max_life;
         // SDL_SetRenderDrawColorFloat(renderer,
         //                             particles[i].color.r * alpha,

@@ -10,15 +10,16 @@ typedef struct WaterParticle {
     float vy;
     float life;
     float max_life;
+    bool active;
     SDL_FColor color;
 } WaterParticle;
 
 #define MAX_WATER_PARTICLES 500
 
 void init_water_particles(void);
-void update_water_particles(float dt);
+void simulate_water_particles(float dt);
 void render_water_particles(SDL_Renderer *renderer);
-void emit_water_particle(float x, float y, float angle);
+void shoot_water_particle(float x, float y, float angle);
 void cleanup_water_particles(void);
 
 #endif
