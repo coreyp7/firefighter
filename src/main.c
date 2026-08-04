@@ -4,13 +4,14 @@
 #include <stdint.h>
 #include <math.h>
 
+#include "gamestate.h"
 #include "water_particles.h"
 #include "debug.h"
 
 typedef uint32_t uint32;
 
 /**
-TODO: A general list of improvements we want to make for player movement.
+A general list of improvements we want to make for player movement.
 - Add gravity to simulation of player
 - basic collision detection to let player stand on something.
 between the player and a simple box (below the player)
@@ -19,37 +20,21 @@ between the player and a simple box (below the player)
 (if to right of player, face right, if to left of player, face left). Update the
 texture to be flipped appropriately.
 
-As a part of the above changes:
-- move game state stuff into its own module (all simulate functions)
-    - water particles should be a part of this, move the array into this
-    module instead of where it is right now
-        - could put all state into a single struct so that we can pass it to the renderer or something
-
 Future state:
 - shooting water should have a tangible physics feedback for gamefeel and fun.
 Allow player to gain speed by shooting water behind them.
 - idea: allow player to walk on water shot? Maybe a different material could
 allow the player to walk on it, powerup?
 */
-typedef struct Player {
-    float x;
-    float y;
-    float xvel;
-    float yvel;
-    float cursor_x;
-    float cursor_y;
-} Player;
 
 bool initSDL(void);
 void cleanupSDL(void);
 bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char* path);
-void processInput(Player *player, bool *isRunning);
-void update_player(Player *player, float dt);
+void processInput(GameState *state, bool *isRunning);
 void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player);
-void render_water_stream(SDL_Renderer *renderer);
+void render_water_stream(SDL_Renderer *renderer, GameState *state);
 
 const float PLAYER_WALK_SPEED = 500.f;
-const float GRAVITY = 500.f;
 
 int main(int argc, char *argv[]) {
     (void)argc;
@@ -80,7 +65,8 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
-    Player player = {50.0, 400.0, 0.0, 0.0};
+    GameState state;
+    init_gamestate(&state);
     float dt = 0.0;
     uint32 last_state_update = SDL_GetTicks();
 
@@ -92,20 +78,19 @@ int main(int argc, char *argv[]) {
         uint32 start_ticks = SDL_GetTicks();
 
         // Input
-        processInput(&player, &isRunning);
+        processInput(&state, &isRunning);
 
         // State
         dt = (SDL_GetTicks() - last_state_update) / 1000.f;
         last_state_update = SDL_GetTicks();
 
-        update_player(&player, dt);
-        simulate_water_particles(dt);
+        simulate_gamestate(&state, dt);
 
         // Render
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        render_player(renderer, player_texture, &player);
+        render_player(renderer, player_texture, &state.player);
 
         SDL_FRect srcrect = {288, 32, 200, 180};
         SDL_FRect destrect = {250, 75, 150, 150};
@@ -118,12 +103,12 @@ int main(int argc, char *argv[]) {
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         SDL_RenderRect(renderer, &destrect);
 
-        render_water_stream(renderer);
+        render_water_stream(renderer, &state);
 
         // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;
-        int active_particles = get_active_water_particle_count();
-        debug_render(renderer, (float)time_of_frame, active_particles, player.x, player.y);
+        int active_particles = get_active_water_particle_count(&state);
+        debug_render(renderer, (float)time_of_frame, active_particles, state.player.x, state.player.y);
 
         SDL_RenderPresent(renderer);
         uint32 required_length_of_frame = 1000.0 / 60.0; // 60 fps
@@ -136,6 +121,7 @@ int main(int argc, char *argv[]) {
     SDL_DestroyTexture(player_texture);
     SDL_DestroyWindow(window);
     cleanupSDL();
+    cleanup_gamestate(&state);
     cleanup_water_particles();
     cleanup_debug();
 
@@ -178,7 +164,8 @@ bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char *path) {
     return true;
 }
 
-void processInput(Player *player, bool *isRunning) {
+void processInput(GameState *state, bool *isRunning) {
+    Player *player = &state->player;
     SDL_Event event;
     while(SDL_PollEvent(&event)){
         switch(event.type){
@@ -203,7 +190,7 @@ void processInput(Player *player, bool *isRunning) {
 
     // Update player cursor with mouse
     float x, y;
-    SDL_MouseButtonFlags state = SDL_GetMouseState(&x, &y);
+    SDL_GetMouseState(&x, &y);
     player->cursor_x = x;
     player->cursor_y = y;
 
@@ -213,20 +200,9 @@ void processInput(Player *player, bool *isRunning) {
         float dx = player->cursor_x - player->x;
         float dy = player->cursor_y - player->y;
         float angle = atan2f(dx, dy);
-        shoot_water_particle(player->x, player->y, angle);
+        shoot_water_particle(state, player->x, player->y, angle);
 
     }
-}
-
-// TODO: this needs to be done in a gamestate module so that we can
-// check collisions of player with anything.
-// For now, just loop through all existing "platforms" and AABB collision check
-// with them & the player. If the player is colliding, then resolve the collision in the y.
-void update_player(Player *player, float dt) {
-    player->yvel += 150 * dt;
-
-    player->x += player->xvel * dt;
-    player->y += player->yvel * dt;
 }
 
 void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player) {
@@ -234,6 +210,6 @@ void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *
     SDL_RenderTextureRotated(renderer, player_texture, NULL, &player_rect, 0.0, NULL, SDL_FLIP_NONE);
 }
 
-void render_water_stream(SDL_Renderer *renderer) {
-    render_water_particles(renderer);
+void render_water_stream(SDL_Renderer *renderer, GameState *state) {
+    render_water_particles(renderer, state);
 }

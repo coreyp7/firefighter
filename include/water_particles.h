@@ -2,25 +2,13 @@
 #define WATER_PARTICLES_H
 
 #include <SDL3/SDL.h>
-
-typedef struct WaterParticle {
-    float x;
-    float y;
-    float vx;
-    float vy;
-    float life;
-    float max_life;
-    bool active;
-    SDL_FColor color;
-} WaterParticle;
-
-#define MAX_WATER_PARTICLES 500
+#include "gamestate.h"
 
 void init_water_particles(void);
-void simulate_water_particles(float dt);
-void render_water_particles(SDL_Renderer *renderer);
-void shoot_water_particle(float x, float y, float angle);
+void simulate_water_particles(GameState *state, float dt);
+void render_water_particles(SDL_Renderer *renderer, GameState *state);
+void shoot_water_particle(GameState *state, float x, float y, float angle);
 void cleanup_water_particles(void);
-int get_active_water_particle_count(void);
+int get_active_water_particle_count(GameState *state);
 
 #endif
