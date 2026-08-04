@@ -20,6 +20,16 @@ void init_debug(SDL_Renderer *renderer) {
     }
 }
 
+static int get_text_width(const char *text) {
+    if (!debug_font) {
+        return 0;
+    }
+
+    int width = 0;
+    TTF_MeasureString(debug_font, text, strlen(text), 0, &width, NULL);
+    return width;
+}
+
 static void render_text(SDL_Renderer *renderer, const char *text, float x, float y) {
     if (!debug_font) {
         return;
@@ -52,34 +62,64 @@ static void render_text(SDL_Renderer *renderer, const char *text, float x, float
     SDL_DestroyTexture(texture);
 }
 
-static void render_frame_time_text(SDL_Renderer *renderer, float frame_time_ms, float y_offset) {
+static void render_frame_time_text(SDL_Renderer *renderer, float frame_time_ms, float x_offset, float y_offset) {
     char text[64];
     snprintf(text, sizeof(text), "Frame: %.2f ms", frame_time_ms);
-
-    // Render at top right with 10px padding from right edge
-    render_text(renderer, text, 1080.0f - 200.0f, y_offset);
+    render_text(renderer, text, x_offset, y_offset);
 }
 
-static void render_particle_count_text(SDL_Renderer *renderer, int active_particles, float y_offset) {
+static void render_particle_count_text(SDL_Renderer *renderer, int active_particles, float x_offset, float y_offset) {
     char text[64];
     snprintf(text, sizeof(text), "Water: %d", active_particles);
-
-    // Render at top right with 10px padding from right edge
-    render_text(renderer, text, 1080.0f - 200.0f, y_offset);
+    render_text(renderer, text, x_offset, y_offset);
 }
 
-void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_particles) {
+static void render_player_position_text(SDL_Renderer *renderer, float player_x, float player_y, float x_offset, float y_offset) {
+    char text[64];
+    snprintf(text, sizeof(text), "Player: (%.1f, %.1f)", player_x, player_y);
+    render_text(renderer, text, x_offset, y_offset);
+}
+
+void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_particles, float player_x, float player_y) {
     if (!debug_font) {
         return;
     }
 
+    // Build all text strings
+    char frame_text[64];
+    char particle_text[64];
+    char player_text[64];
+
+    snprintf(frame_text, sizeof(frame_text), "Frame: %.2f ms", frame_time_ms);
+    snprintf(particle_text, sizeof(particle_text), "Water: %d", active_particles);
+    snprintf(player_text, sizeof(player_text), "Player: (%.1f, %.1f)", player_x, player_y);
+
+    // Calculate max width
+    int max_width = 0;
+    int width;
+
+    width = get_text_width(frame_text);
+    if (width > max_width) max_width = width;
+
+    width = get_text_width(particle_text);
+    if (width > max_width) max_width = width;
+
+    width = get_text_width(player_text);
+    if (width > max_width) max_width = width;
+
+    // Calculate x offset to align to right edge with 10px padding
+    float x_offset = 1080.0f - max_width - 10.0f;
     float y_offset = 10.0f;
     float line_height = 20.0f;
 
-    render_frame_time_text(renderer, frame_time_ms, y_offset);
+    // Render all text
+    render_frame_time_text(renderer, frame_time_ms, x_offset, y_offset);
     y_offset += line_height;
 
-    render_particle_count_text(renderer, active_particles, y_offset);
+    render_particle_count_text(renderer, active_particles, x_offset, y_offset);
+    y_offset += line_height;
+
+    render_player_position_text(renderer, player_x, player_y, x_offset, y_offset);
 }
 
 void cleanup_debug(void) {

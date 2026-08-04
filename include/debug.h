@@ -5,7 +5,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 void init_debug(SDL_Renderer *renderer);
-void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_particles);
+void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_particles, float player_x, float player_y);
 void cleanup_debug(void);
 
 #endif
