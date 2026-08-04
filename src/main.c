@@ -9,6 +9,28 @@
 
 typedef uint32_t uint32;
 
+/**
+TODO: A general list of improvements we want to make for player movement.
+- Add gravity to simulation of player
+- basic collision detection to let player stand on something.
+between the player and a simple box (below the player)
+- allow player to jump
+- player direction is dependent on where the cursor position is relative to player
+(if to right of player, face right, if to left of player, face left). Update the
+texture to be flipped appropriately.
+
+As a part of the above changes:
+- move game state stuff into its own module (all simulate functions)
+    - water particles should be a part of this, move the array into this
+    module instead of where it is right now
+        - could put all state into a single struct so that we can pass it to the renderer or something
+
+Future state:
+- shooting water should have a tangible physics feedback for gamefeel and fun.
+Allow player to gain speed by shooting water behind them.
+- idea: allow player to walk on water shot? Maybe a different material could
+allow the player to walk on it, powerup?
+*/
 typedef struct Player {
     float x;
     float y;
@@ -27,6 +49,7 @@ void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *
 void render_water_stream(SDL_Renderer *renderer);
 
 const float PLAYER_WALK_SPEED = 500.f;
+const float GRAVITY = 500.f;
 
 int main(int argc, char *argv[]) {
     (void)argc;
@@ -195,7 +218,13 @@ void processInput(Player *player, bool *isRunning) {
     }
 }
 
+// TODO: this needs to be done in a gamestate module so that we can
+// check collisions of player with anything.
+// For now, just loop through all existing "platforms" and AABB collision check
+// with them & the player. If the player is colliding, then resolve the collision in the y.
 void update_player(Player *player, float dt) {
+    player->yvel += 150 * dt;
+
     player->x += player->xvel * dt;
     player->y += player->yvel * dt;
 }

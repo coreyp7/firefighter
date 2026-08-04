@@ -98,6 +98,7 @@ void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_partic
     int max_width = 0;
     int width;
 
+    // TODO: change these to loop through a list instead.
     width = get_text_width(frame_text);
     if (width > max_width) max_width = width;
 
@@ -113,6 +114,8 @@ void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_partic
     float line_height = 20.0f;
 
     // Render all text
+    // TODO: write a generic function for drawing the text.
+    // Then loop through and draw them all generically.
     render_frame_time_text(renderer, frame_time_ms, x_offset, y_offset);
     y_offset += line_height;
 
