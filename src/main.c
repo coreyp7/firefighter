@@ -195,6 +195,9 @@ void processInput(GameState *state, bool *isRunning) {
                 } else if(event.key.key == SDLK_LEFT) {
                     player->xvel = -PLAYER_WALK_SPEED;
                 }
+                if(event.key.key == SDLK_UP){
+                    player->yvel -= 250;
+                }
                 break;
             case SDL_EVENT_KEY_UP:
                 if(event.key.key == SDLK_RIGHT || event.key.key == SDLK_LEFT) {
