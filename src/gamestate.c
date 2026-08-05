@@ -42,7 +42,7 @@ void update_player(GameState *state, float dt) {
     float oldx = player->x;
     float oldy = player->y;
 
-    player->yvel += 150 * dt;
+    player->yvel += PLAYER_GRAVITY * dt;
 
     player->x += player->xvel * dt;
     player_rect.x = player->x;
@@ -55,10 +55,13 @@ void update_player(GameState *state, float dt) {
     player->y += player->yvel * dt;
     player_rect.y = player->y;
     if(is_colliding(player_rect, block_rect)){
+        player->is_grounded = true;
         player->y = oldy;
         player->yvel = 0;
         player_rect.y = oldy;
 
+    } else {
+        player->is_grounded = false;
     }
 
     // Check collisions

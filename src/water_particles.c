@@ -2,9 +2,11 @@
 #include <SDL3/SDL.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define GRAVITY 500.0f
-#define WATER_VELOCITY 500.0f
+//#define WATER_VELOCITY 500.0f
+#define WATER_VELOCITY 700.0f
 #define WATER_LIFETIME 7.0f
 
 void init_water_particles(void) {
@@ -53,8 +55,23 @@ void shoot_water_particle(GameState *state, float x, float y, float angle) {
 
     p->x = x;
     p->y = y;
-    p->vx = sinf(angle) * WATER_VELOCITY;
-    p->vy = cosf(angle) * WATER_VELOCITY - 100.0f;
+    float vx = sinf(angle) * WATER_VELOCITY;
+    float vy = cosf(angle) * WATER_VELOCITY - 100.0f;
+    p->vx = vx;
+    p->vy = vy;
+
+    // float random_dev_x = rand() % 5;
+    // float random_dev_y = rand() % 5;
+    // if (rand() % 2 == 0){
+    //     random_dev_x *= -1;
+    // }
+    // if (rand() % 2 == 0){
+    //     random_dev_y *= -1;
+    // }
+    //
+    // p->vx = vx + random_dev_x;
+    // p->vy = vy + random_dev_y;
+
     p->max_life = WATER_LIFETIME;
     p->life = p->max_life;
     p->active = true;

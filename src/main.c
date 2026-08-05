@@ -44,6 +44,7 @@ void render_water_stream(SDL_Renderer *renderer, GameState *state);
 void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block);
 
 const float PLAYER_WALK_SPEED = 500.f;
+const float PLAYER_JUMP_FORCE = 350.f;
 
 int main(int argc, char *argv[]) {
     (void)argc;
@@ -190,17 +191,17 @@ void processInput(GameState *state, bool *isRunning) {
                 *isRunning = false;
                 break;
             case SDL_EVENT_KEY_DOWN:
-                if(event.key.key == SDLK_RIGHT) {
+                if(event.key.key == SDLK_D) {
                     player->xvel = PLAYER_WALK_SPEED;
-                } else if(event.key.key == SDLK_LEFT) {
+                } else if(event.key.key == SDLK_A) {
                     player->xvel = -PLAYER_WALK_SPEED;
                 }
-                if(event.key.key == SDLK_UP){
-                    player->yvel -= 250;
+                if(event.key.key == SDLK_W && state->player.is_grounded){
+                    player->yvel -= PLAYER_JUMP_FORCE;
                 }
                 break;
             case SDL_EVENT_KEY_UP:
-                if(event.key.key == SDLK_RIGHT || event.key.key == SDLK_LEFT) {
+                if(event.key.key == SDLK_D || event.key.key == SDLK_A) {
                     player->xvel = 0;
                 }
                 break;

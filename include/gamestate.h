@@ -6,6 +6,8 @@
 #define MAX_WATER_PARTICLES 500
 #define MAX_BLOCK_AMOUNT 30
 
+#define PLAYER_GRAVITY 700
+
 typedef struct Player {
     float x;
     float y;
@@ -15,6 +17,7 @@ typedef struct Player {
     float yvel;
     float cursor_x;
     float cursor_y;
+    bool is_grounded;
 } Player;
 
 typedef struct WaterParticle {
