@@ -4,10 +4,13 @@
 #include <SDL3/SDL.h>
 
 #define MAX_WATER_PARTICLES 500
+#define MAX_BLOCK_AMOUNT 30
 
 typedef struct Player {
     float x;
     float y;
+    float w;
+    float h;
     float xvel;
     float yvel;
     float cursor_x;
@@ -25,14 +28,24 @@ typedef struct WaterParticle {
     SDL_FColor color;
 } WaterParticle;
 
+typedef struct Block {
+    float x;
+    float y;
+    float w;
+    float h;
+} Block;
+
 typedef struct GameState {
     Player player;
     WaterParticle particles[MAX_WATER_PARTICLES];
     int particle_count;
+    Block blocks[MAX_BLOCK_AMOUNT];
 } GameState;
 
 void init_gamestate(GameState *state);
 void simulate_gamestate(GameState *state, float dt);
 void cleanup_gamestate(GameState *state);
+bool is_colliding(SDL_FRect a, SDL_FRect b);
+void update_player(GameState *state, float dt);
 
 #endif

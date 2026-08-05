@@ -27,12 +27,21 @@ Allow player to gain speed by shooting water behind them.
 allow the player to walk on it, powerup?
 */
 
+/**
+Collision detection with boxes plan.
+1. add list of "blocks", add 1 to bottom of screen for prince to land on.
+2. render the blocks
+3. each frame, check if player and block are colliding in player's new position.
+    - if so, then resolve
+*/
+
 bool initSDL(void);
 void cleanupSDL(void);
 bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char* path);
 void processInput(GameState *state, bool *isRunning);
 void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player);
 void render_water_stream(SDL_Renderer *renderer, GameState *state);
+void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block);
 
 const float PLAYER_WALK_SPEED = 500.f;
 
@@ -65,6 +74,13 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
+    SDL_Texture *block_sprite = NULL;
+    if (!loadImage(renderer, &block_sprite, "img/block.png")) {
+        SDL_DestroyWindow(window);
+        cleanupSDL();
+        return 2;
+    }
+
     GameState state;
     init_gamestate(&state);
     float dt = 0.0;
@@ -90,6 +106,7 @@ int main(int argc, char *argv[]) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
+        render_block(renderer, block_sprite, state.blocks[0]);
         render_player(renderer, player_texture, &state.player);
 
         SDL_FRect srcrect = {288, 32, 200, 180};
@@ -212,4 +229,9 @@ void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *
 
 void render_water_stream(SDL_Renderer *renderer, GameState *state) {
     render_water_particles(renderer, state);
+}
+
+void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block) {
+    SDL_FRect rect = {block.x, block.y, block.w, block.h};
+    SDL_RenderTextureRotated(renderer, texture, NULL, &rect, 0.0, NULL, SDL_FLIP_NONE);
 }

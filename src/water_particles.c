@@ -7,6 +7,10 @@
 #define WATER_VELOCITY 500.0f
 #define WATER_LIFETIME 7.0f
 
+void init_water_particles(void) {
+    // No-op: initialization is now handled by init_gamestate
+}
+
 void simulate_water_particles(GameState *state, float dt) {
     for (int i = 0; i < state->particle_count; i++) {
         WaterParticle *p = &state->particles[i];
@@ -84,5 +88,9 @@ int get_active_water_particle_count(GameState *state) {
         }
     }
     return active_count;
+}
+
+void cleanup_water_particles(void) {
+    // No-op: cleanup is now handled by cleanup_gamestate
 }
 
