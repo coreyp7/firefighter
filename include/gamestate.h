@@ -43,6 +43,7 @@ typedef struct GameState {
     WaterParticle particles[MAX_WATER_PARTICLES];
     int particle_count;
     Block blocks[MAX_BLOCK_AMOUNT];
+    int block_count;
 } GameState;
 
 void init_gamestate(GameState *state);

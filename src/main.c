@@ -107,7 +107,9 @@ int main(int argc, char *argv[]) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        render_block(renderer, block_sprite, state.blocks[0]);
+        for (int i = 0; i < state.block_count; i++) {
+            render_block(renderer, block_sprite, state.blocks[i]);
+        }
         render_player(renderer, player_texture, &state.player);
 
         SDL_FRect srcrect = {288, 32, 200, 180};

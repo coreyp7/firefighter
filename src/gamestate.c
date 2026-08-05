@@ -16,12 +16,14 @@ void init_gamestate(GameState *state) {
         state->particles[i].active = false;
     }
 
-    // Test block
-    Block *block = state->blocks;
-    block->x = 0;
-    block->y = 500;
-    block->w = 250;
-    block->h = 250;
+    // Initialize blocks at ground level
+    state->block_count = 5;
+
+    state->blocks[0] = (Block){0, 500, 250, 250};
+    state->blocks[1] = (Block){250, 500, 250, 250};
+    state->blocks[2] = (Block){500, 500, 250, 250};
+    state->blocks[3] = (Block){750, 500, 250, 250};
+    state->blocks[4] = (Block){1000, 500, 250, 250};
 }
 
 void simulate_gamestate(GameState *state, float dt) {
@@ -36,38 +38,46 @@ void cleanup_gamestate(GameState *state) {
 void update_player(GameState *state, float dt) {
     Player *player = &state->player;
     SDL_FRect player_rect = {player->x, player->y, 95, 95};
-    Block *block = &state->blocks[0];
-    SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
 
     float oldx = player->x;
     float oldy = player->y;
 
     player->yvel += PLAYER_GRAVITY * dt;
 
+    // Check horizontal collisions
     player->x += player->xvel * dt;
     player_rect.x = player->x;
-    if(is_colliding(player_rect, block_rect)){
-        player->x = oldx;
-        player->xvel = 0;
-        player_rect.x = oldx;
+    for (int i = 0; i < state->block_count; i++) {
+        Block *block = &state->blocks[i];
+        SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
+        if(is_colliding(player_rect, block_rect)){
+            player->x = oldx;
+            player->xvel = 0;
+            player_rect.x = oldx;
+            break;
+        }
     }
 
+    // Check vertical collisions
     player->y += player->yvel * dt;
     player_rect.y = player->y;
-    if(is_colliding(player_rect, block_rect)){
-        player->is_grounded = true;
-        player->y = oldy;
-        player->yvel = 0;
-        player_rect.y = oldy;
-
-    } else {
-        player->is_grounded = false;
+    bool collided_vertically = false;
+    for (int i = 0; i < state->block_count; i++) {
+        Block *block = &state->blocks[i];
+        SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
+        if(is_colliding(player_rect, block_rect)){
+            player->is_grounded = true;
+            player->y = oldy;
+            player->yvel = 0;
+            player_rect.y = oldy;
+            collided_vertically = true;
+            break;
+        }
     }
 
-    // Check collisions
-    // SDL_FRect player_rect = {player->x, player->y, 95, 95};
-    // Block *block = blocks[0];
-    // SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
+    if (!collided_vertically) {
+        player->is_grounded = false;
+    }
 }
 
 // bool check_collision_2d(AABB2D a, AABB2D b) {
