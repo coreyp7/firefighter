@@ -1,4 +1,5 @@
 #include "water_particles.h"
+#include "camera.h"
 #include <SDL3/SDL.h>
 #include <math.h>
 #include <stdio.h>
@@ -33,10 +34,10 @@ void simulate_water_particles(GameState *state, float dt) {
     }
 }
 
-void shoot_water_particle(GameState *state, float x, float y, float angle, SDL_FRect camera) {
+void shoot_water_particle(GameState *state, float x, float y, float angle) {
     SDL_FPoint converted_cursor_pos = {x, y};
-    converted_cursor_pos.x += camera.x;
-    converted_cursor_pos.y += camera.y;
+    converted_cursor_pos.x += state->camera.x;
+    converted_cursor_pos.y += state->camera.y;
 
 
     WaterParticle *p = NULL;
@@ -83,7 +84,7 @@ void shoot_water_particle(GameState *state, float x, float y, float angle, SDL_F
     p->color = (SDL_FColor){0.2f, 0.8f, 1.0f, 0.8f};
 }
 
-void render_water_particles(SDL_Renderer *renderer, GameState *state, SDL_FRect camera) {
+void render_water_particles(SDL_Renderer *renderer, GameState *state) {
     for (int i = 0; i < state->particle_count; i++) {
         if (!state->particles[i].active) {
             continue;
@@ -97,7 +98,7 @@ void render_water_particles(SDL_Renderer *renderer, GameState *state, SDL_FRect 
         //                             state->particles[i].color.a * alpha);
         // SDL_RenderPoint(renderer, state->particles[i].x, state->particles[i].y);
         SDL_FRect frect = {state->particles[i].x, state->particles[i].y, 15.f, 15.f};
-        SDL_FPoint newpos = convert_pos_to_camera_pos(camera, frect.x, frect.y);
+        SDL_FPoint newpos = convert_pos_to_camera_pos(state->camera, frect.x, frect.y);
         frect.x = newpos.x;
         frect.y = newpos.y;
 

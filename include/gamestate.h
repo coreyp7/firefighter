@@ -2,6 +2,7 @@
 #define GAMESTATE_H
 
 #include <SDL3/SDL.h>
+#include "camera.h"
 
 #define MAX_WATER_PARTICLES 500
 #define MAX_BLOCK_AMOUNT 30
@@ -45,13 +46,13 @@ typedef struct GameState {
     int particle_count;
     Block blocks[MAX_BLOCK_AMOUNT];
     int block_count;
+    Camera camera;
 } GameState;
 
-void init_gamestate(GameState *state);
-void simulate_gamestate(GameState *state, float dt, SDL_FRect camera);
+void init_gamestate(GameState *state, int window_width, int window_height);
+void simulate_gamestate(GameState *state, float dt);
 void cleanup_gamestate(GameState *state);
 bool is_colliding(SDL_FRect a, SDL_FRect b);
-void update_player(GameState *state, float dt, SDL_FRect camera);
-SDL_FPoint convert_pos_to_camera_pos(SDL_FRect camera, float x, float y);
+void update_player(GameState *state, float dt);
 
 #endif

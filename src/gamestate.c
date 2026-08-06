@@ -1,9 +1,10 @@
 #include "gamestate.h"
 #include "water_particles.h"
+#include "camera.h"
 #include <math.h>
 
 
-void init_gamestate(GameState *state) {
+void init_gamestate(GameState *state, int window_width, int window_height) {
     state->player.x = 50.0;
     state->player.y = 400.0;
     state->player.xvel = 0.0;
@@ -17,7 +18,6 @@ void init_gamestate(GameState *state) {
         state->particles[i].active = false;
     }
 
-    // Initialize blocks at ground level
     state->block_count = 5;
 
     state->blocks[0] = (Block){0, 500, 250, 250};
@@ -25,19 +25,27 @@ void init_gamestate(GameState *state) {
     state->blocks[2] = (Block){500, 500, 250, 250};
     state->blocks[3] = (Block){750, 500, 250, 250};
     state->blocks[4] = (Block){1000, 500, 250, 250};
+
+    state->camera = (Camera){0, 0, window_width, window_height};
 }
 
-void simulate_gamestate(GameState *state, float dt, SDL_FRect camera) {
-    update_player(state, dt, camera);
+void simulate_gamestate(GameState *state, float dt) {
+    update_player(state, dt);
     simulate_water_particles(state, dt);
+
+    // Update camera to follow player
+    // TODO: make this lerp instead of instant movement.
+    // Give the camera its own x/y velocity.
+    state->camera.x = state->player.x - (state->camera.w / 2);
+    state->camera.y = state->player.y - (state->camera.h / 2);
 }
 
 void cleanup_gamestate(GameState *state) {
     state->particle_count = 0;
 }
 
-// TODO: split this up into some functions.
-void update_player(GameState *state, float dt, SDL_FRect camera) {
+// TODO: maybe split this up into some functions.
+void update_player(GameState *state, float dt) {
     Player *player = &state->player;
     SDL_FRect player_rect = {player->x, player->y, 95, 95};
 
@@ -81,26 +89,18 @@ void update_player(GameState *state, float dt, SDL_FRect camera) {
         player->is_grounded = false;
     }
 
-    // Update facing direction
+    // Update prince facing direction
     SDL_FPoint player_pos_relative = convert_pos_to_camera_pos(
-        camera, player->x, player->y
+        state->camera, player->x, player->y
     );
-    if(player_pos_relative.x > player->x){
+    if(player_pos_relative.x < player->cursor_x){
         player->is_facing_left = false;
     } else {
         player->is_facing_left = true;
     }
 }
 
-// bool check_collision_2d(AABB2D a, AABB2D b) {
-//     // Check if there is separation on any axis
-//     if (a.maxX < b.minX || a.minX > b.maxX) return false;
-//     if (a.maxY < b.minY || a.minY > b.maxY) return false;
-//
-//     // Overlapping on both axes means a collision is occurring
-//     return true;
-// }
-
+// AABB
 bool is_colliding(SDL_FRect a, SDL_FRect b){
     // If separation on either axis return false
     if(a.x + a.w < b.x || a.x > b.x + b.w){
@@ -113,10 +113,3 @@ bool is_colliding(SDL_FRect a, SDL_FRect b){
     return true;
 }
 
-// TODO: move this to renderer. Shouldn't be here.
-SDL_FPoint convert_pos_to_camera_pos(SDL_FRect camera, float x, float y){
-    float newx = x - camera.x;
-    float newy = y - camera.y;
-    SDL_FPoint newpos = {newx, newy};
-    return newpos;
-}
