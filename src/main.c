@@ -11,15 +11,18 @@
 typedef uint32_t uint32;
 
 /**
-A general list of improvements we want to make for player movement.
-- Add gravity to simulation of player
-- basic collision detection to let player stand on something.
-between the player and a simple box (below the player)
-- allow player to jump
-- player direction is dependent on where the cursor position is relative to player
-(if to right of player, face right, if to left of player, face left). Update the
-texture to be flipped appropriately.
+Immediate todo:
+- draw relative to the camera
+- add gameobject for a bush
+    - can be on fire
+    - show animation if on fire
+- allow player to put out fires
+    - puts out animation
+    - damage numbers when hitting it lol
+    - maybe a small splash effect
+*/
 
+/**
 Future state:
 - shooting water should have a tangible physics feedback for gamefeel and fun.
 Allow player to gain speed by shooting water behind them.
@@ -27,24 +30,20 @@ Allow player to gain speed by shooting water behind them.
 allow the player to walk on it, powerup?
 */
 
-/**
-Collision detection with boxes plan.
-1. add list of "blocks", add 1 to bottom of screen for prince to land on.
-2. render the blocks
-3. each frame, check if player and block are colliding in player's new position.
-    - if so, then resolve
-*/
-
 bool initSDL(void);
 void cleanupSDL(void);
 bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char* path);
-void processInput(GameState *state, bool *isRunning);
-void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player);
-void render_water_stream(SDL_Renderer *renderer, GameState *state);
-void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block);
+void processInput(GameState *state, bool *isRunning, SDL_FRect camera);
+void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player,
+                   SDL_FRect camera);
+void render_water_stream(SDL_Renderer *renderer, GameState *state, SDL_FRect camera);
+void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, SDL_FRect camera);
+//SDL_FPoint convert_pos_to_camera_pos(SDL_FRect camera, float x, float y);
 
 const float PLAYER_WALK_SPEED = 500.f;
 const float PLAYER_JUMP_FORCE = 350.f;
+const int WINDOW_HEIGHT = 720;
+const int WINDOW_WIDTH = 1080;
 
 int main(int argc, char *argv[]) {
     (void)argc;
@@ -52,7 +51,7 @@ int main(int argc, char *argv[]) {
 
     initSDL();
 
-    SDL_Window *window = SDL_CreateWindow("ff", 1080, 720, 0);
+    SDL_Window *window = SDL_CreateWindow("ff", WINDOW_WIDTH, WINDOW_HEIGHT, 0);
     if (!window) {
         cleanupSDL();
         return 1;
@@ -86,6 +85,7 @@ int main(int argc, char *argv[]) {
     init_gamestate(&state);
     float dt = 0.0;
     uint32 last_state_update = SDL_GetTicks();
+    SDL_FRect camera = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
 
     SDL_ShowWindow(window);
     init_water_particles();
@@ -95,22 +95,24 @@ int main(int argc, char *argv[]) {
         uint32 start_ticks = SDL_GetTicks();
 
         // Input
-        processInput(&state, &isRunning);
+        processInput(&state, &isRunning, camera);
 
         // State
         dt = (SDL_GetTicks() - last_state_update) / 1000.f;
         last_state_update = SDL_GetTicks();
 
-        simulate_gamestate(&state, dt);
+        simulate_gamestate(&state, dt, camera);
+        camera.x = state.player.x - (WINDOW_WIDTH/2);
+        camera.y = state.player.y - (WINDOW_HEIGHT/2);
 
         // Render
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
         for (int i = 0; i < state.block_count; i++) {
-            render_block(renderer, block_sprite, state.blocks[i]);
+            render_block(renderer, block_sprite, state.blocks[i], camera);
         }
-        render_player(renderer, player_texture, &state.player);
+        render_player(renderer, player_texture, &state.player, camera);
 
         SDL_FRect srcrect = {288, 32, 200, 180};
         SDL_FRect destrect = {250, 75, 150, 150};
@@ -123,7 +125,7 @@ int main(int argc, char *argv[]) {
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         SDL_RenderRect(renderer, &destrect);
 
-        render_water_stream(renderer, &state);
+        render_water_stream(renderer, &state, camera);
 
         // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;
@@ -184,7 +186,7 @@ bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char *path) {
     return true;
 }
 
-void processInput(GameState *state, bool *isRunning) {
+void processInput(GameState *state, bool *isRunning, SDL_FRect camera) {
     Player *player = &state->player;
     SDL_Event event;
     while(SDL_PollEvent(&event)){
@@ -220,28 +222,42 @@ void processInput(GameState *state, bool *isRunning) {
     // spacebar/water shoot
     const bool *key_states = SDL_GetKeyboardState(NULL);
     if (key_states[SDL_SCANCODE_SPACE]) {
-        float dx = player->cursor_x - player->x;
-        float dy = player->cursor_y - player->y;
+        SDL_FPoint player_relative_pos = convert_pos_to_camera_pos(camera, player->x, player->y);
+        // float dx = player->cursor_x - player->x;
+        // float dy = player->cursor_y - player->y;
+        float dx = player->cursor_x - player_relative_pos.x;
+        float dy = player->cursor_y - player_relative_pos.y;
         float angle = atan2f(dx, dy);
-        shoot_water_particle(state, player->x, player->y, angle);
+        shoot_water_particle(state, player->x, player->y, angle, camera);
 
     }
 }
 
-void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player) {
+void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player,
+                   SDL_FRect camera) {
     SDL_FRect player_rect = {player->x, player->y, 95, 95};
     SDL_FlipMode flipMode = SDL_FLIP_NONE;
     if(!player->is_facing_left){
         flipMode = SDL_FLIP_HORIZONTAL;
     }
+    SDL_FPoint newpos = convert_pos_to_camera_pos(camera, player_rect.x, player_rect.y);
+    player_rect.x = newpos.x;
+    player_rect.y = newpos.y;
+
     SDL_RenderTextureRotated(renderer, player_texture, NULL, &player_rect, 0.0, NULL, flipMode);
 }
 
-void render_water_stream(SDL_Renderer *renderer, GameState *state) {
-    render_water_particles(renderer, state);
+void render_water_stream(SDL_Renderer *renderer, GameState *state, SDL_FRect camera) {
+    render_water_particles(renderer, state, camera);
 }
 
-void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block) {
+void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, SDL_FRect camera) {
     SDL_FRect rect = {block.x, block.y, block.w, block.h};
+    SDL_FPoint newpos = convert_pos_to_camera_pos(camera, rect.x, rect.y);
+    rect.x = newpos.x;
+    rect.y = newpos.y;
     SDL_RenderTextureRotated(renderer, texture, NULL, &rect, 0.0, NULL, SDL_FLIP_NONE);
+    SDL_Log("drew block at pos(%f, %f)\n", rect.x, rect.y);
 }
+
+

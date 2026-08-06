@@ -27,8 +27,8 @@ void init_gamestate(GameState *state) {
     state->blocks[4] = (Block){1000, 500, 250, 250};
 }
 
-void simulate_gamestate(GameState *state, float dt) {
-    update_player(state, dt);
+void simulate_gamestate(GameState *state, float dt, SDL_FRect camera) {
+    update_player(state, dt, camera);
     simulate_water_particles(state, dt);
 }
 
@@ -37,7 +37,7 @@ void cleanup_gamestate(GameState *state) {
 }
 
 // TODO: split this up into some functions.
-void update_player(GameState *state, float dt) {
+void update_player(GameState *state, float dt, SDL_FRect camera) {
     Player *player = &state->player;
     SDL_FRect player_rect = {player->x, player->y, 95, 95};
 
@@ -82,7 +82,10 @@ void update_player(GameState *state, float dt) {
     }
 
     // Update facing direction
-    if(player->cursor_x > player->x){
+    SDL_FPoint player_pos_relative = convert_pos_to_camera_pos(
+        camera, player->x, player->y
+    );
+    if(player_pos_relative.x > player->x){
         player->is_facing_left = false;
     } else {
         player->is_facing_left = true;
@@ -108,4 +111,12 @@ bool is_colliding(SDL_FRect a, SDL_FRect b){
         return false;
     }
     return true;
+}
+
+// TODO: move this to renderer. Shouldn't be here.
+SDL_FPoint convert_pos_to_camera_pos(SDL_FRect camera, float x, float y){
+    float newx = x - camera.x;
+    float newy = y - camera.y;
+    SDL_FPoint newpos = {newx, newy};
+    return newpos;
 }

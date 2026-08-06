@@ -33,7 +33,12 @@ void simulate_water_particles(GameState *state, float dt) {
     }
 }
 
-void shoot_water_particle(GameState *state, float x, float y, float angle) {
+void shoot_water_particle(GameState *state, float x, float y, float angle, SDL_FRect camera) {
+    SDL_FPoint converted_cursor_pos = {x, y};
+    converted_cursor_pos.x += camera.x;
+    converted_cursor_pos.y += camera.y;
+
+
     WaterParticle *p = NULL;
 
     for (int i = 0; i < state->particle_count; i++) {
@@ -78,7 +83,7 @@ void shoot_water_particle(GameState *state, float x, float y, float angle) {
     p->color = (SDL_FColor){0.2f, 0.8f, 1.0f, 0.8f};
 }
 
-void render_water_particles(SDL_Renderer *renderer, GameState *state) {
+void render_water_particles(SDL_Renderer *renderer, GameState *state, SDL_FRect camera) {
     for (int i = 0; i < state->particle_count; i++) {
         if (!state->particles[i].active) {
             continue;
@@ -92,6 +97,10 @@ void render_water_particles(SDL_Renderer *renderer, GameState *state) {
         //                             state->particles[i].color.a * alpha);
         // SDL_RenderPoint(renderer, state->particles[i].x, state->particles[i].y);
         SDL_FRect frect = {state->particles[i].x, state->particles[i].y, 15.f, 15.f};
+        SDL_FPoint newpos = convert_pos_to_camera_pos(camera, frect.x, frect.y);
+        frect.x = newpos.x;
+        frect.y = newpos.y;
+
         SDL_SetRenderDrawColor(renderer, 92, 181, 225, 255);
         SDL_RenderFillRect(renderer, &frect);
     }
