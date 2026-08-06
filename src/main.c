@@ -230,7 +230,11 @@ void processInput(GameState *state, bool *isRunning) {
 
 void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player) {
     SDL_FRect player_rect = {player->x, player->y, 95, 95};
-    SDL_RenderTextureRotated(renderer, player_texture, NULL, &player_rect, 0.0, NULL, SDL_FLIP_NONE);
+    SDL_FlipMode flipMode = SDL_FLIP_NONE;
+    if(!player->is_facing_left){
+        flipMode = SDL_FLIP_HORIZONTAL;
+    }
+    SDL_RenderTextureRotated(renderer, player_texture, NULL, &player_rect, 0.0, NULL, flipMode);
 }
 
 void render_water_stream(SDL_Renderer *renderer, GameState *state) {

@@ -10,6 +10,7 @@ void init_gamestate(GameState *state) {
     state->player.yvel = 0.0;
     state->player.cursor_x = 0.0;
     state->player.cursor_y = 0.0;
+    state->player.is_facing_left = false;
 
     state->particle_count = 0;
     for (int i = 0; i < MAX_WATER_PARTICLES; i++) {
@@ -35,6 +36,7 @@ void cleanup_gamestate(GameState *state) {
     state->particle_count = 0;
 }
 
+// TODO: split this up into some functions.
 void update_player(GameState *state, float dt) {
     Player *player = &state->player;
     SDL_FRect player_rect = {player->x, player->y, 95, 95};
@@ -77,6 +79,13 @@ void update_player(GameState *state, float dt) {
 
     if (!collided_vertically) {
         player->is_grounded = false;
+    }
+
+    // Update facing direction
+    if(player->cursor_x > player->x){
+        player->is_facing_left = false;
+    } else {
+        player->is_facing_left = true;
     }
 }
 

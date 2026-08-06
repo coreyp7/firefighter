@@ -18,6 +18,7 @@ typedef struct Player {
     float cursor_x;
     float cursor_y;
     bool is_grounded;
+    bool is_facing_left;
 } Player;
 
 typedef struct WaterParticle {
