@@ -8,6 +8,7 @@
 #include "water_particles.h"
 #include "camera.h"
 #include "debug.h"
+#include "renderer.h"
 
 typedef uint32_t uint32;
 
@@ -35,10 +36,6 @@ bool initSDL(void);
 void cleanupSDL(void);
 bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char* path);
 void processInput(GameState *state, bool *isRunning);
-void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player,
-                   Camera camera);
-void render_water_stream(SDL_Renderer *renderer, GameState *state);
-void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, Camera camera);
 
 //const float PLAYER_WALK_SPEED = 500.f;
 const float PLAYER_WALK_SPEED = 250.f;
@@ -59,8 +56,9 @@ int main(int argc, char *argv[]) {
     }
     bool isRunning = true;
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, NULL);
-    SDL_Texture *player_texture = NULL;
+    // TODO: move renderer init into renderer module
+    renderer = SDL_CreateRenderer(window, NULL);
+    player_texture = NULL;
 
     if (!loadImage(renderer, &player_texture, "img/player.webp")) {
         SDL_DestroyWindow(window);
@@ -68,14 +66,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    SDL_Texture *bush_sprite_sheet = NULL;
+    bush_sprite_sheet = NULL;
     if (!loadImage(renderer, &bush_sprite_sheet, "img/bushes.png")) {
         SDL_DestroyWindow(window);
         cleanupSDL();
         return 2;
     }
 
-    SDL_Texture *block_sprite = NULL;
+    block_sprite = NULL;
     if (!loadImage(renderer, &block_sprite, "img/block.png")) {
         SDL_DestroyWindow(window);
         cleanupSDL();
@@ -94,36 +92,13 @@ int main(int argc, char *argv[]) {
     while(isRunning){
         uint32 start_ticks = SDL_GetTicks();
 
-        // Input
         processInput(&state, &isRunning);
 
-        // State
         dt = (SDL_GetTicks() - last_state_update) / 1000.f;
         last_state_update = SDL_GetTicks();
-
         simulate_gamestate(&state, dt);
 
-        // Render
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        for (int i = 0; i < state.block_count; i++) {
-            render_block(renderer, block_sprite, state.blocks[i], state.camera);
-        }
-        render_player(renderer, player_texture, &state.player, state.camera);
-
-        SDL_FRect srcrect = {288, 32, 200, 180};
-        SDL_FRect destrect = {250, 75, 150, 150};
-        SDL_RenderTexture(
-            renderer,
-            bush_sprite_sheet,
-            &srcrect,
-            &destrect
-        );
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderRect(renderer, &destrect);
-
-        render_water_stream(renderer, &state);
+        render_gamestate(&state);
 
         // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;
@@ -227,36 +202,6 @@ void processInput(GameState *state, bool *isRunning) {
         float dy = player->cursor_y - player_relative_pos.y;
         float angle = atan2f(dx, dy);
         shoot_water_particle(state, player->x, player->y, angle);
-
     }
 }
-
-//TODO: move this shit into a renderer module.
-void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player,
-                   Camera camera) {
-    SDL_FRect player_rect = {player->x, player->y, 95, 95};
-    SDL_FlipMode flipMode = SDL_FLIP_NONE;
-    if(!player->is_facing_left){
-        flipMode = SDL_FLIP_HORIZONTAL;
-    }
-    SDL_FPoint newpos = convert_pos_to_camera_pos(camera, player_rect.x, player_rect.y);
-    player_rect.x = newpos.x;
-    player_rect.y = newpos.y;
-
-    SDL_RenderTextureRotated(renderer, player_texture, NULL, &player_rect, 0.0, NULL, flipMode);
-}
-
-void render_water_stream(SDL_Renderer *renderer, GameState *state) {
-    render_water_particles(renderer, state);
-}
-
-void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, Camera camera) {
-    SDL_FRect rect = {block.x, block.y, block.w, block.h};
-    SDL_FPoint newpos = convert_pos_to_camera_pos(camera, rect.x, rect.y);
-    rect.x = newpos.x;
-    rect.y = newpos.y;
-    SDL_RenderTextureRotated(renderer, texture, NULL, &rect, 0.0, NULL, SDL_FLIP_NONE);
-    SDL_Log("drew block at pos(%f, %f)\n", rect.x, rect.y);
-}
-
 

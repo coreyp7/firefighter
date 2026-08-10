@@ -6,7 +6,6 @@
 
 void init_water_particles(void);
 void simulate_water_particles(GameState *state, float dt);
-void render_water_particles(SDL_Renderer *renderer, GameState *state);
 void shoot_water_particle(GameState *state, float x, float y, float angle);
 void cleanup_water_particles(void);
 int get_active_water_particle_count(GameState *state);
