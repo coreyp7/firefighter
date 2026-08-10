@@ -23,6 +23,7 @@ void render_gamestate(GameState *state){
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderRect(renderer, &destrect);
 
+    render_fires(renderer, state);
     render_water_particles(renderer, state);
 
 }
@@ -64,4 +65,27 @@ void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, Cam
     rect.y = newpos.y;
     SDL_RenderTextureRotated(renderer, texture, NULL, &rect, 0.0, NULL, SDL_FLIP_NONE);
     //SDL_Log("drew block at pos(%f, %f)\n", rect.x, rect.y);
+}
+
+void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera) {
+    if (!is_fire_alive(fire)) {
+        return;
+    }
+
+    SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
+    SDL_FPoint newpos = convert_pos_to_camera_pos(camera, fire_rect.x, fire_rect.y);
+    fire_rect.x = newpos.x;
+    fire_rect.y = newpos.y;
+
+    SDL_SetRenderDrawColor(renderer, 255, 100, 0, 255);
+    SDL_RenderFillRect(renderer, &fire_rect);
+
+    SDL_SetRenderDrawColor(renderer, 255, 50, 0, 255);
+    SDL_RenderRect(renderer, &fire_rect);
+}
+
+void render_fires(SDL_Renderer *renderer, GameState *state) {
+    for (int i = 0; i < state->fire_count; i++) {
+        render_fire(renderer, &state->fires[i], state->camera);
+    }
 }

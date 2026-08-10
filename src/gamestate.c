@@ -1,6 +1,7 @@
 #include "gamestate.h"
 #include "water_particles.h"
 #include "camera.h"
+#include "fire.h"
 #include <math.h>
 
 
@@ -19,12 +20,18 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     }
 
     state->block_count = 5;
-
     state->blocks[0] = (Block){0, 500, 250, 250};
     state->blocks[1] = (Block){250, 500, 250, 250};
     state->blocks[2] = (Block){500, 500, 250, 250};
     state->blocks[3] = (Block){750, 500, 250, 250};
     state->blocks[4] = (Block){1000, 500, 250, 250};
+
+    // Initialize fires
+    state->fire_count = 3;
+    init_fire(&state->fires[0], 300, 450, 50, 50, 10);
+    init_fire(&state->fires[1], 600, 450, 50, 50, 25);
+    init_fire(&state->fires[2], 900, 450, 50, 50, 50);
+    init_fire(&state->fires[3], 1200, 450, 50, 50, 75);
 
     state->camera = (Camera){0, 0, window_width, window_height};
 }
@@ -32,6 +39,7 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
 void simulate_gamestate(GameState *state, float dt) {
     update_player(state, dt);
     simulate_water_particles(state, dt);
+    check_water_fire_collisions(state);
 
     // Update camera to follow player
     // TODO: make this lerp instead of instant movement.
@@ -111,5 +119,48 @@ bool is_colliding(SDL_FRect a, SDL_FRect b){
         return false;
     }
     return true;
+}
+
+void check_water_fire_collisions(GameState *state) {
+    // Iterate through all water particles
+    for (int i = 0; i < state->particle_count; i++) {
+        WaterParticle *particle = &state->particles[i];
+
+        if (!particle->active) {
+            continue;
+        }
+
+        // Create rect for water particle
+        SDL_FRect water_rect = {particle->x, particle->y, 15.0f, 15.0f};
+
+        // Check collision with each fire
+        for (int j = 0; j < state->fire_count; j++) {
+            Fire *fire = &state->fires[j];
+
+            if (!is_fire_alive(fire)) {
+                continue;
+            }
+
+            // Create rect for fire
+            SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
+
+            // Check if they collide
+            if (is_colliding(water_rect, fire_rect)) {
+                // Damage the fire
+                fire->health -= 1.0f;
+
+                // Put out the water particle (set life to max so it disappears)
+                particle->life = 0;
+                particle->active = false;
+
+                // Check if fire is extinguished
+                if (fire->health <= 0) {
+                    fire->active = false;
+                }
+
+                break; // Water particle can only hit one fire
+            }
+        }
+    }
 }
 

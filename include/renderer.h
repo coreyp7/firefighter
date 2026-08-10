@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 #include "gamestate.h"
 #include "camera.h"
+#include "fire.h"
 
 
 SDL_Renderer *renderer;
@@ -16,5 +17,7 @@ void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *
 void render_water_stream(SDL_Renderer *renderer, GameState *state);
 void render_water_particles(SDL_Renderer *renderer, GameState *state);
 void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, Camera camera);
+void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera);
+void render_fires(SDL_Renderer *renderer, GameState *state);
 
 #endif
