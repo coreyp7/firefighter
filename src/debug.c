@@ -1,4 +1,5 @@
 #include "debug.h"
+#include "camera.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
@@ -123,6 +124,36 @@ void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_partic
     y_offset += line_height;
 
     render_player_position_text(renderer, player_x, player_y, x_offset, y_offset);
+}
+
+void debug_render_fire_health(SDL_Renderer *renderer, Fire *fire, Camera camera) {
+    if (!is_fire_alive(fire)) {
+        return;
+    }
+
+    // Convert fire position to camera space
+    SDL_FPoint fire_screen_pos = convert_pos_to_camera_pos(camera, fire->x, fire->y);
+
+    // Health bar dimensions
+    float bar_width = fire->w;
+    float bar_height = 5.0f;
+    float bar_x = fire_screen_pos.x;
+    float bar_y = fire_screen_pos.y - 10.0f; // 10px above fire
+
+    // Background bar (red/dark)
+    SDL_FRect bg_rect = {bar_x, bar_y, bar_width, bar_height};
+    SDL_SetRenderDrawColor(renderer, 100, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &bg_rect);
+
+    // Health bar (green)
+    float health_percent = fire->health / fire->max_health;
+    SDL_FRect health_rect = {bar_x, bar_y, bar_width * health_percent, bar_height};
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_RenderFillRect(renderer, &health_rect);
+
+    // Border
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderRect(renderer, &bg_rect);
 }
 
 void cleanup_debug(void) {

@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "camera.h"
+#include "debug.h"
 #include <SDL3/SDL.h>
 
 void render_gamestate(GameState *state){
@@ -87,5 +88,6 @@ void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera) {
 void render_fires(SDL_Renderer *renderer, GameState *state) {
     for (int i = 0; i < state->fire_count; i++) {
         render_fire(renderer, &state->fires[i], state->camera);
+        debug_render_fire_health(renderer, &state->fires[i], state->camera);
     }
 }
