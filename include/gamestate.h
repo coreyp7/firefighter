@@ -58,5 +58,6 @@ void cleanup_gamestate(GameState *state);
 bool is_colliding(SDL_FRect a, SDL_FRect b);
 void update_player(GameState *state, float dt);
 void check_water_fire_collisions(GameState *state);
+void update_fires(GameState *state, float dt);
 
 #endif

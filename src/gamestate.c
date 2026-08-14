@@ -45,6 +45,7 @@ void simulate_gamestate(GameState *state, float dt) {
     update_player(state, dt);
     simulate_water_particles(state, dt);
     check_water_fire_collisions(state);
+    update_fires(state, dt);
 
     // Update camera to follow player
     // TODO: make this lerp instead of instant movement.
@@ -159,6 +160,32 @@ void check_water_fire_collisions(GameState *state) {
 
 
                 break; // Water particle can only hit one fire
+            }
+        }
+    }
+}
+
+//QUESTION: do we delete fires when they go out?
+void update_fires(GameState *state, float dt){
+    // Check all the neighbors of an inactive fire, and if they are alive,
+    // then begin lighting the fire.
+    // NOTE: a fire shouldn't be considered active until its health reaches 60%.
+    for(int i=0; i<state->fire_count; i++){
+        Fire *fire = &state->fires[i];
+        // if(is_fire_alive(fire)){
+        //     continue;
+        // }
+
+        // SLOW: there's a better way to do this but worry about that later.
+        for(int j=0; j<fire->neighbors_size; j++){
+            Fire *neighbor = fire->neighbors[j];
+            if(is_fire_alive(neighbor)){
+                // TODO: update this to be kindof dynamic based on how active
+                // the neighbor fire is.
+                fire->health += 0.1;
+                if(fire->health > fire->max_health){
+                    fire->health = fire->max_health;
+                }
             }
         }
     }
