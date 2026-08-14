@@ -69,16 +69,20 @@ void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, Cam
 }
 
 void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera) {
-    if (!is_fire_alive(fire)) {
-        return;
-    }
+    // if (!is_fire_alive(fire)) {
+    //     return;
+    // }
 
     SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
     SDL_FPoint newpos = convert_pos_to_camera_pos(camera, fire_rect.x, fire_rect.y);
     fire_rect.x = newpos.x;
     fire_rect.y = newpos.y;
 
-    SDL_SetRenderDrawColor(renderer, 255, 100, 0, 255);
+    float fire_strength = fire->health / fire->max_health;
+    float fire_opacity = 255 * fire_strength;
+
+    // TODO: alter opacity based off health.
+    SDL_SetRenderDrawColor(renderer, 255, 100, 0, fire_opacity);
     SDL_RenderFillRect(renderer, &fire_rect);
 
     SDL_SetRenderDrawColor(renderer, 255, 50, 0, 255);

@@ -142,9 +142,9 @@ void debug_render(SDL_Renderer *renderer, GameState *state, float frame_time_ms)
 }
 
 void debug_render_fire_health(SDL_Renderer *renderer, Fire *fire, Camera camera) {
-    if (!is_fire_alive(fire)) {
-        return;
-    }
+    // if (!is_fire_alive(fire)) {
+    //     return;
+    // }
 
     // Convert fire position to camera space
     SDL_FPoint fire_screen_pos = convert_pos_to_camera_pos(camera, fire->x, fire->y);
@@ -179,11 +179,6 @@ void debug_render_fire_neighbors(SDL_Renderer *renderer, GameState *state) {
     for (int i = 0; i < state->fire_count; i++) {
         Fire *fire = &state->fires[i];
 
-        // Skip inactive fires
-        if (!is_fire_alive(fire)) {
-            continue;
-        }
-
         // Calculate fire center in world space
         float fire_center_x = fire->x + fire->w / 2.0f;
         float fire_center_y = fire->y + fire->h / 2.0f;
@@ -196,11 +191,6 @@ void debug_render_fire_neighbors(SDL_Renderer *renderer, GameState *state) {
         // Draw lines to each neighbor
         for (int j = 0; j < fire->neighbors_size; j++) {
             Fire *neighbor = fire->neighbors[j];
-
-            // Skip if neighbor is null or inactive
-            if (!neighbor || !is_fire_alive(neighbor)) {
-                continue;
-            }
 
             // Avoid drawing duplicate lines for bidirectional neighbors
             // Only draw if current fire pointer < neighbor pointer

@@ -14,7 +14,6 @@ typedef struct Fire {
     float h;
     float health;
     float max_health;
-    bool active;
     struct Fire* neighbors[MAX_NEIGHBORS];
     int neighbors_size;
 } Fire;

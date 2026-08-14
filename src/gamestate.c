@@ -15,9 +15,9 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->player.is_facing_left = false;
 
     state->particle_count = 0;
-    for (int i = 0; i < MAX_WATER_PARTICLES; i++) {
-        state->particles[i].active = false;
-    }
+    // for (int i = 0; i < MAX_WATER_PARTICLES; i++) {
+    //     state->particles[i].active = false;
+    // }
 
     state->block_count = 5;
     state->blocks[0] = (Block){0, 500, 250, 250};
@@ -133,6 +133,7 @@ void check_water_fire_collisions(GameState *state) {
     for (int i = 0; i < state->particle_count; i++) {
         WaterParticle *particle = &state->particles[i];
 
+        // TODO: rename to isActive
         if (!particle->active) {
             continue;
         }
@@ -142,7 +143,8 @@ void check_water_fire_collisions(GameState *state) {
         for (int j = 0; j < state->fire_count; j++) {
             Fire *fire = &state->fires[j];
 
-            if (!is_fire_alive(fire)) {
+            //if (!is_fire_alive(fire)) {
+            if(fire->health == 0){
                 continue;
             }
 
@@ -151,13 +153,14 @@ void check_water_fire_collisions(GameState *state) {
             if (is_colliding(water_rect, fire_rect)) {
                 fire->health -= 1.0f;
                 if (fire->health <= 0) {
-                    fire->active = false;
+                    // TODO: get rid of this active logic.
+                    // Just have it be a function that looks at the health.
+                    fire->health = 0;
                 }
 
                 // Kill the water particle
                 particle->life = 0;
                 particle->active = false;
-
 
                 break; // Water particle can only hit one fire
             }
@@ -165,27 +168,24 @@ void check_water_fire_collisions(GameState *state) {
     }
 }
 
-//QUESTION: do we delete fires when they go out?
+// SLOW: there's a better way to do this but worry about that later.
 void update_fires(GameState *state, float dt){
     // Check all the neighbors of an inactive fire, and if they are alive,
     // then begin lighting the fire.
-    // NOTE: a fire shouldn't be considered active until its health reaches 60%.
     for(int i=0; i<state->fire_count; i++){
         Fire *fire = &state->fires[i];
-        // if(is_fire_alive(fire)){
-        //     continue;
-        // }
+        if(fire->health >= fire->max_health){
+            fire->health = fire->max_health;
+            continue;
+        }
 
-        // SLOW: there's a better way to do this but worry about that later.
         for(int j=0; j<fire->neighbors_size; j++){
             Fire *neighbor = fire->neighbors[j];
+
             if(is_fire_alive(neighbor)){
-                // TODO: update this to be kindof dynamic based on how active
-                // the neighbor fire is.
+            // TODO: update this to be dynamic based on how active
+            // the neighbor fire is.
                 fire->health += 0.1;
-                if(fire->health > fire->max_health){
-                    fire->health = fire->max_health;
-                }
             }
         }
     }
