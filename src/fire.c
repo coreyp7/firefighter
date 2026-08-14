@@ -26,6 +26,20 @@ void add_fire_neighbor(Fire *fire, Fire *neighbor){
         return;
     }
 
+    // TODO: we should really check if they're already neighbors from
+    // either direction of the relationship.
     fire->neighbors[fire->neighbors_size] = neighbor;
     fire->neighbors_size += 1;
+
+
+    if(neighbor->neighbors_size > MAX_NEIGHBORS){
+        SDL_Log("Cannot add neighor to fire %p, at max neighbors.\n", &neighbor);
+        return;
+    }
+
+    // TODO: we should really check if they're already neighbors from
+    // either direction of the relationship.
+    neighbor->neighbors[neighbor->neighbors_size] = fire;
+    neighbor->neighbors_size += 1;
+
 }

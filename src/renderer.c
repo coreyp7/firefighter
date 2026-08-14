@@ -79,13 +79,12 @@ void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera) {
     fire_rect.y = newpos.y;
 
     float fire_strength = fire->health / fire->max_health;
-    float fire_opacity = 255 * fire_strength;
+    float fire_opacity = 100 * fire_strength;
 
-    // TODO: alter opacity based off health.
     SDL_SetRenderDrawColor(renderer, 255, 100, 0, fire_opacity);
     SDL_RenderFillRect(renderer, &fire_rect);
 
-    SDL_SetRenderDrawColor(renderer, 255, 50, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 50, 0, fire_opacity);
     SDL_RenderRect(renderer, &fire_rect);
 }
 
