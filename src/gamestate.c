@@ -28,10 +28,15 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
 
     // Initialize fires
     state->fire_count = 3;
-    init_fire(&state->fires[0], 300, 450, 50, 50, 10);
+    init_fire(&state->fires[0], 300, 400, 50, 50, 10);
     init_fire(&state->fires[1], 600, 450, 50, 50, 25);
-    init_fire(&state->fires[2], 900, 450, 50, 50, 50);
-    init_fire(&state->fires[3], 1200, 450, 50, 50, 75);
+    init_fire(&state->fires[2], 500, 300, 50, 50, 50);
+    // init_fire(&state->fires[3], 1200, 450, 50, 50, 75);
+
+    add_fire_neighbor(&state->fires[0], &state->fires[1]);
+    add_fire_neighbor(&state->fires[1], &state->fires[2]);
+    // add_fire_neighbor(&state->fires[2], &state->fires[3]);
+    // add_fire_neighbor(&state->fires[3], &state->fires[0]);
 
     state->camera = (Camera){0, 0, window_width, window_height};
 }
@@ -122,7 +127,8 @@ bool is_colliding(SDL_FRect a, SDL_FRect b){
 }
 
 void check_water_fire_collisions(GameState *state) {
-    // Iterate through all water particles
+    // Currently n^2, can fix in future if I switch to spacial data structure.
+    // There's a max of around 370~ water particles.
     for (int i = 0; i < state->particle_count; i++) {
         WaterParticle *particle = &state->particles[i];
 
@@ -130,10 +136,8 @@ void check_water_fire_collisions(GameState *state) {
             continue;
         }
 
-        // Create rect for water particle
         SDL_FRect water_rect = {particle->x, particle->y, 15.0f, 15.0f};
 
-        // Check collision with each fire
         for (int j = 0; j < state->fire_count; j++) {
             Fire *fire = &state->fires[j];
 
@@ -141,22 +145,18 @@ void check_water_fire_collisions(GameState *state) {
                 continue;
             }
 
-            // Create rect for fire
             SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
 
-            // Check if they collide
             if (is_colliding(water_rect, fire_rect)) {
-                // Damage the fire
                 fire->health -= 1.0f;
-
-                // Put out the water particle (set life to max so it disappears)
-                particle->life = 0;
-                particle->active = false;
-
-                // Check if fire is extinguished
                 if (fire->health <= 0) {
                     fire->active = false;
                 }
+
+                // Kill the water particle
+                particle->life = 0;
+                particle->active = false;
+
 
                 break; // Water particle can only hit one fire
             }

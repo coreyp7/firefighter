@@ -81,9 +81,21 @@ static void render_player_position_text(SDL_Renderer *renderer, float player_x, 
     render_text(renderer, text, x_offset, y_offset);
 }
 
-void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_particles, float player_x, float player_y) {
+void debug_render(SDL_Renderer *renderer, GameState *state, float frame_time_ms) {
     if (!debug_font) {
         return;
+    }
+
+    // Extract values from GameState
+    float player_x = state->player.x;
+    float player_y = state->player.y;
+
+    // Count active particles
+    int active_particles = 0;
+    for (int i = 0; i < state->particle_count; i++) {
+        if (state->particles[i].active) {
+            active_particles++;
+        }
     }
 
     // Build all text strings
@@ -124,6 +136,9 @@ void debug_render(SDL_Renderer *renderer, float frame_time_ms, int active_partic
     y_offset += line_height;
 
     render_player_position_text(renderer, player_x, player_y, x_offset, y_offset);
+
+    // Render fire neighbor connections
+    debug_render_fire_neighbors(renderer, state);
 }
 
 void debug_render_fire_health(SDL_Renderer *renderer, Fire *fire, Camera camera) {
@@ -154,6 +169,62 @@ void debug_render_fire_health(SDL_Renderer *renderer, Fire *fire, Camera camera)
     // Border
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderRect(renderer, &bg_rect);
+}
+
+void debug_render_fire_neighbors(SDL_Renderer *renderer, GameState *state) {
+    // Use yellow color for neighbor connection lines
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+
+    // Iterate through all fires
+    for (int i = 0; i < state->fire_count; i++) {
+        Fire *fire = &state->fires[i];
+
+        // Skip inactive fires
+        if (!is_fire_alive(fire)) {
+            continue;
+        }
+
+        // Calculate fire center in world space
+        float fire_center_x = fire->x + fire->w / 2.0f;
+        float fire_center_y = fire->y + fire->h / 2.0f;
+
+        // Convert to camera space
+        SDL_FPoint fire_screen_pos = convert_pos_to_camera_pos(
+            state->camera, fire_center_x, fire_center_y
+        );
+
+        // Draw lines to each neighbor
+        for (int j = 0; j < fire->neighbors_size; j++) {
+            Fire *neighbor = fire->neighbors[j];
+
+            // Skip if neighbor is null or inactive
+            if (!neighbor || !is_fire_alive(neighbor)) {
+                continue;
+            }
+
+            // Avoid drawing duplicate lines for bidirectional neighbors
+            // Only draw if current fire pointer < neighbor pointer
+            if (fire >= neighbor) {
+                continue;
+            }
+
+            // Calculate neighbor center in world space
+            float neighbor_center_x = neighbor->x + neighbor->w / 2.0f;
+            float neighbor_center_y = neighbor->y + neighbor->h / 2.0f;
+
+            // Convert to camera space
+            SDL_FPoint neighbor_screen_pos = convert_pos_to_camera_pos(
+                state->camera, neighbor_center_x, neighbor_center_y
+            );
+
+            // Draw line between fire centers
+            SDL_RenderLine(
+                renderer,
+                fire_screen_pos.x, fire_screen_pos.y,
+                neighbor_screen_pos.x, neighbor_screen_pos.y
+            );
+        }
+    }
 }
 
 void cleanup_debug(void) {

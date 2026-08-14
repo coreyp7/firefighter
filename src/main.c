@@ -102,8 +102,7 @@ int main(int argc, char *argv[]) {
 
         // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;
-        int active_particles = get_active_water_particle_count(&state);
-        debug_render(renderer, (float)time_of_frame, active_particles, state.player.x, state.player.y);
+        debug_render(renderer, &state, (float)time_of_frame);
 
         SDL_RenderPresent(renderer);
         uint32 required_length_of_frame = 1000.0 / 60.0; // 60 fps
