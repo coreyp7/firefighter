@@ -63,8 +63,8 @@ void pool_free(Pool *pool, void *ptr){
   node->next = pool->head;
   pool->head = node;
 
-    // new for ff
-  memset(node, 0, pool->node_size);
+// new for ff
+//memset(node, 0, pool->node_size);
 }
 
 void pool_print_info(Pool *pool){

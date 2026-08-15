@@ -27,7 +27,7 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
                 break;
 
             case SDL_EVENT_KEY_DOWN:
-                if (event.key.key == SDLK_F1) {
+                if (event.key.key == SDLK_F1 || event.key.key == SDLK_0) {
                     input_event->type = INPUT_TOGGLE_MODE;
                     buffer->event_count++;
                 } else if (event.key.key == SDLK_A) {

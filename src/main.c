@@ -335,9 +335,11 @@ void processEditorInput(GameState *state, InputBuffer *input) {
                         // Remove this fire's neighbor references from all other fires
                         for (int i = 0; i < state->fire_count; i++) {
                             Fire *other_fire = &state->fires_buf[i];
+
                             for (int j = 0; j < other_fire->neighbors_size; j++) {
                                 if (other_fire->neighbors[j] == clicked_fire) {
                                     // Shift neighbors array
+                                    // TODO: this sucks
                                     for (int k = j; k < other_fire->neighbors_size - 1; k++) {
                                         other_fire->neighbors[k] = other_fire->neighbors[k + 1];
                                     }
