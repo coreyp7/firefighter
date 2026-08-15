@@ -95,8 +95,11 @@ void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera) {
 
 void render_fires(SDL_Renderer *renderer, GameState *state) {
     for (int i = 0; i < state->fire_count; i++) {
-        render_fire(renderer, &state->fires[i], state->camera);
-        debug_render_fire_health(renderer, &state->fires[i], state->camera);
+        if(!state->fires_buf[i].active) {
+            continue;
+        }
+        render_fire(renderer, &state->fires_buf[i], state->camera);
+        debug_render_fire_health(renderer, &state->fires_buf[i], state->camera);
     }
 }
 
@@ -142,7 +145,7 @@ void render_editor_ui(SDL_Renderer *renderer, GameState *state) {
 
     Fire *fire_at_cursor = NULL;
     for (int i = 0; i < state->fire_count; i++) {
-        Fire *fire = &state->fires[i];
+        Fire *fire = &state->fires_buf[i];
         SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
 
         if (world_x >= fire_rect.x && world_x <= fire_rect.x + fire_rect.w &&

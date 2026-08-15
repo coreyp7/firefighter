@@ -10,6 +10,7 @@
 #include "debug.h"
 #include "renderer.h"
 #include "input.h"
+#include "pool.h"
 
 typedef uint32_t uint32;
 
@@ -255,7 +256,7 @@ void processPlayInput(GameState *state, InputBuffer *input) {
 // Helper function to get fire at world position
 Fire* get_fire_at_position(GameState *state, float world_x, float world_y) {
     for (int i = 0; i < state->fire_count; i++) {
-        Fire *fire = &state->fires[i];
+        Fire *fire = &state->fires_buf[i];
 
         SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
 
@@ -307,16 +308,17 @@ void processEditorInput(GameState *state, InputBuffer *input) {
                             state->selected_fire = NULL;
                         }
                     } else {
+                        // WARN: THIS WILL CRASH IF YOU GO BEYOND FIRE LIMIT.
                         // Clicked on empty space - place new fire
-                        if (state->fire_count < MAX_FIRES) {
-                            init_fire(&state->fires[state->fire_count],
-                                     world_x - 25, world_y - 25, 50, 50, 50);
-                            state->fire_count++;
-                            SDL_Log("Placed new fire at (%f, %f)", world_x, world_y);
-                            state->selected_fire = NULL;
-                        } else {
-                            SDL_Log("Max fires reached!");
-                        }
+                        Fire* fire = pool_alloc(&state->fires_pool);
+                        init_fire(fire,
+                                 world_x - 25, world_y - 25, 50, 50, 50);
+                        state->fire_count++;
+                        SDL_Log("Placed new fire at (%f, %f)", world_x, world_y);
+                        state->selected_fire = NULL;
+                        // } else {
+                        //     SDL_Log("Max fires reached!");
+                        // }
                     }
                 }
                 break;
@@ -328,31 +330,33 @@ void processEditorInput(GameState *state, InputBuffer *input) {
                     float world_y = event->mouse_y + state->camera.y;
 
                     Fire *clicked_fire = get_fire_at_position(state, world_x, world_y);
-                    // THIS IS BROKEN RIGHT NOW, impl pool allocator.
-                    //
-                    // if (clicked_fire != NULL) {
-                    //     // Remove this fire's neighbor references from all other fires
-                    //     for (int i = 0; i < state->fire_count; i++) {
-                    //         Fire *other_fire = &state->fires[i];
-                    //         for (int j = 0; j < other_fire->neighbors_size; j++) {
-                    //             if (other_fire->neighbors[j] == clicked_fire) {
-                    //                 // Shift neighbors array
-                    //                 for (int k = j; k < other_fire->neighbors_size - 1; k++) {
-                    //                     other_fire->neighbors[k] = other_fire->neighbors[k + 1];
-                    //                 }
-                    //                 other_fire->neighbors_size--;
-                    //                 break;
-                    //             }
-                    //         }
-                    //     }
-                    //
-                    //     // Clear selected_fire if it was this fire
-                    //     if (state->selected_fire == clicked_fire) {
-                    //         state->selected_fire = NULL;
-                    //     }
-                    //
-                    //     SDL_Log("Deleted fire");
-                    // }
+                    //THIS IS BROKEN RIGHT NOW, impl pool allocator.
+
+                    if (clicked_fire != NULL) {
+                        // Remove this fire's neighbor references from all other fires
+                        for (int i = 0; i < state->fire_count; i++) {
+                            Fire *other_fire = &state->fires_buf[i];
+                            for (int j = 0; j < other_fire->neighbors_size; j++) {
+                                if (other_fire->neighbors[j] == clicked_fire) {
+                                    // Shift neighbors array
+                                    for (int k = j; k < other_fire->neighbors_size - 1; k++) {
+                                        other_fire->neighbors[k] = other_fire->neighbors[k + 1];
+                                    }
+                                    other_fire->neighbors_size--;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Clear selected_fire if it was this fire
+                        if (state->selected_fire == clicked_fire) {
+                            state->selected_fire = NULL;
+                        }
+
+                        pool_free(&state->fires_pool, clicked_fire);
+
+                        SDL_Log("Deleted fire");
+                    }
                 }
                 break;
 

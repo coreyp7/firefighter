@@ -16,6 +16,7 @@ typedef struct Fire {
     float max_health;
     struct Fire* neighbors[MAX_NEIGHBORS];
     int neighbors_size;
+    bool active; // in pool context, is this a valid fire?
 } Fire;
 
 void init_fire(Fire *fire, float x, float y, float w, float h, float health);

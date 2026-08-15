@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 #include "camera.h"
 #include "fire.h"
+#include "pool.h"
 
 #define MAX_WATER_PARTICLES 500
 #define MAX_BLOCK_AMOUNT 30
@@ -55,7 +56,9 @@ typedef struct GameState {
     int block_count;
     // TODO: we need to implement a pool-based allocator so that we can properly
     // delete and add at will (random order). Check your old implementations.
-    Fire fires[MAX_FIRES];
+    //Fire fires[MAX_FIRES];
+    Fire fires_buf[MAX_FIRES];
+    Pool fires_pool;
     int fire_count;
     Camera camera;
     GameMode current_mode;
@@ -69,6 +72,9 @@ bool is_colliding(SDL_FRect a, SDL_FRect b);
 void update_player(GameState *state, float dt);
 void check_water_fire_collisions(GameState *state);
 void update_fires(GameState *state, float dt);
+
+// These are editor functions but leaving in here for now.
+void editor_delete_fire(GameState *state, Fire *fire);
 
 // TODO: these really shouldn't be here.
 // Put these into a module for file io

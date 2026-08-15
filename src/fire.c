@@ -9,6 +9,7 @@ void init_fire(Fire *fire, float x, float y, float w, float h, float health) {
     fire->max_health = health;
     memset(fire->neighbors, 0, sizeof(fire->neighbors));
     fire->neighbors_size = 0;
+    fire->active = true;
 }
 
 // TODO: this function is okay, but logic should be entirely based off health.

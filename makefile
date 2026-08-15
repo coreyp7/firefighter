@@ -9,7 +9,7 @@ SRC_DIR = src
 BUILD_DIR = build
 
 # Source files
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/gamestate.c $(SRC_DIR)/water_particles.c $(SRC_DIR)/camera.c $(SRC_DIR)/debug.c $(SRC_DIR)/renderer.c $(SRC_DIR)/fire.c $(SRC_DIR)/input.c
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/gamestate.c $(SRC_DIR)/water_particles.c $(SRC_DIR)/camera.c $(SRC_DIR)/debug.c $(SRC_DIR)/renderer.c $(SRC_DIR)/fire.c $(SRC_DIR)/input.c $(SRC_DIR)/pool.c
 
 all: $(TARGET)
 

@@ -28,15 +28,24 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->blocks[3] = (Block){750, 500, 250, 250};
     state->blocks[4] = (Block){1000, 500, 250, 250};
 
-    // Initialize fires
-    state->fire_count = 3;
-    init_fire(&state->fires[0], 300, 400, 50, 50, 10);
-    init_fire(&state->fires[1], 600, 450, 50, 50, 25);
-    init_fire(&state->fires[2], 500, 300, 50, 50, 50);
-    // init_fire(&state->fires[3], 1200, 450, 50, 50, 75);
+    // Initialize fires pool and add initial test fires.
+    // For now, we won't create any fires until loading.
+    pool_init(
+        &state->fires_pool,
+        &state->fires_buf,
+        MAX_FIRES * sizeof(Fire),
+        sizeof(Fire)
+    );
+    // Fire* fire1 = pool_alloc(fires_pool);
+    // fire1
+    // Couldn't we just add this process to init_fire?
+    // state->fire_count = 3;
+    // init_fire(&state->fires[0], 300, 400, 50, 50, 10);
+    // init_fire(&state->fires[1], 600, 450, 50, 50, 25);
+    // init_fire(&state->fires[2], 500, 300, 50, 50, 50);
 
-    add_fire_neighbor(&state->fires[0], &state->fires[1]);
-    add_fire_neighbor(&state->fires[1], &state->fires[2]);
+    // add_fire_neighbor(&state->fires[0], &state->fires[1]);
+    // add_fire_neighbor(&state->fires[1], &state->fires[2]);
     // add_fire_neighbor(&state->fires[2], &state->fires[3]);
     // add_fire_neighbor(&state->fires[3], &state->fires[0]);
 
@@ -150,7 +159,7 @@ void check_water_fire_collisions(GameState *state) {
         SDL_FRect water_rect = {particle->x, particle->y, 15.0f, 15.0f};
 
         for (int j = 0; j < state->fire_count; j++) {
-            Fire *fire = &state->fires[j];
+            Fire *fire = &state->fires_buf[j];
 
             //if (!is_fire_alive(fire)) {
             if(fire->health == 0){
@@ -182,7 +191,7 @@ void update_fires(GameState *state, float dt){
     // Check all the neighbors of an inactive fire, and if they are alive,
     // then begin lighting the fire.
     for(int i=0; i<state->fire_count; i++){
-        Fire *fire = &state->fires[i];
+        Fire *fire = &state->fires_buf[i];
         if(fire->health >= fire->max_health){
             fire->health = fire->max_health;
             continue;
@@ -203,7 +212,7 @@ void update_fires(GameState *state, float dt){
 // Helper function to find the index of a fire in the fires array
 int find_fire_index(GameState *state, Fire *fire) {
     for (int i = 0; i < state->fire_count; i++) {
-        if (&state->fires[i] == fire) {
+        if (&state->fires_buf[i] == fire) {
             return i;
         }
     }
@@ -222,7 +231,7 @@ void save_fire_layout(GameState *state, const char *filename) {
 
     // Write each fire
     for (int i = 0; i < state->fire_count; i++) {
-        Fire *fire = &state->fires[i];
+        Fire *fire = &state->fires_buf[i];
         fprintf(fp, "%d: %f %f %f %f %f %d",
                 i, fire->x, fire->y, fire->w, fire->h, fire->health,
                 fire->neighbors_size);
@@ -257,8 +266,8 @@ void load_fire_layout(GameState *state, const char *filename) {
     SDL_Log("Fire count loaded: %i\n", fire_count);
 
     // Clear our current level before loading.
-    state->fire_count = 0;
-    memset(state->fires, 0, state->fire_count);
+    pool_free_all(&state->fires_pool);
+    //memset(state->fires, 0, state->fire_count);
 
     // Temporary storage for neighbor indices
     int neighbor_indices[MAX_FIRES][MAX_NEIGHBORS];
@@ -275,7 +284,9 @@ void load_fire_layout(GameState *state, const char *filename) {
             break;
         }
 
-        init_fire(&state->fires[idx], x, y, w, h, health);
+        //init_fire(&state->fires[idx], x, y, w, h, health);
+        Fire* fire = pool_alloc(&state->fires_pool);
+        init_fire(fire, x, y, w, h, health);
         neighbor_counts[idx] = neighbor_count;
 
         // Read neighbor indices
@@ -292,12 +303,12 @@ void load_fire_layout(GameState *state, const char *filename) {
 
     // Second pass: Set up neighbor pointers
     for (int i = 0; i < fire_count; i++) {
-        Fire *fire = &state->fires[i];
+        Fire *fire = &state->fires_buf[i];
         for (int j = 0; j < neighbor_counts[i]; j++) {
             int neighbor_idx = neighbor_indices[i][j];
             if (neighbor_idx >= 0 && neighbor_idx < fire_count) {
                 //add_fire_neighbor(fire, &state->fires[neighbor_idx]);
-                add_fire_neighbor_one_way(fire, &state->fires[neighbor_idx]);
+                add_fire_neighbor_one_way(fire, &state->fires_buf[neighbor_idx]);
             }
         }
     }

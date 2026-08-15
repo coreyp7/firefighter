@@ -177,7 +177,7 @@ void debug_render_fire_neighbors(SDL_Renderer *renderer, GameState *state) {
 
     // Iterate through all fires
     for (int i = 0; i < state->fire_count; i++) {
-        Fire *fire = &state->fires[i];
+        Fire *fire = &state->fires_buf[i];
 
         // Calculate fire center in world space
         float fire_center_x = fire->x + fire->w / 2.0f;

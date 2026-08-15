@@ -48,6 +48,9 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
                 } else if (event.key.key == SDLK_L) {
                     input_event->type = INPUT_EDITOR_LOAD;
                     buffer->event_count++;
+                } else if (event.key.key == SDLK_P) {
+                    input_event->type = INPUT_EDITOR_SAVE;
+                    buffer->event_count++;
                 }
                 break;
 
