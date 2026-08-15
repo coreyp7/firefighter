@@ -19,5 +19,6 @@ void render_water_particles(SDL_Renderer *renderer, GameState *state);
 void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, Camera camera);
 void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera);
 void render_fires(SDL_Renderer *renderer, GameState *state);
+void render_editor_ui(SDL_Renderer *renderer, GameState *state);
 
 #endif

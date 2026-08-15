@@ -10,6 +10,12 @@
 
 #define PLAYER_GRAVITY 700
 
+// NOTE: I don't know if I want this here.
+typedef enum GameMode {
+    MODE_PLAY,
+    MODE_FIRE_EDITOR
+} GameMode;
+
 typedef struct Player {
     float x;
     float y;
@@ -47,9 +53,13 @@ typedef struct GameState {
     int particle_count;
     Block blocks[MAX_BLOCK_AMOUNT];
     int block_count;
+    // TODO: we need to implement a pool-based allocator so that we can properly
+    // delete and add at will (random order). Check your old implementations.
     Fire fires[MAX_FIRES];
     int fire_count;
     Camera camera;
+    GameMode current_mode;
+    Fire *selected_fire;
 } GameState;
 
 void init_gamestate(GameState *state, int window_width, int window_height);
@@ -59,5 +69,11 @@ bool is_colliding(SDL_FRect a, SDL_FRect b);
 void update_player(GameState *state, float dt);
 void check_water_fire_collisions(GameState *state);
 void update_fires(GameState *state, float dt);
+
+// TODO: these really shouldn't be here.
+// Put these into a module for file io
+void save_fire_layout(GameState *state, const char *filename);
+void load_fire_layout(GameState *state, const char *filename);
+int find_fire_index(GameState *state, Fire *fire);
 
 #endif

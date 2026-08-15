@@ -3,6 +3,8 @@
 #include "camera.h"
 #include "fire.h"
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
 
 
 void init_gamestate(GameState *state, int window_width, int window_height) {
@@ -39,6 +41,11 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     // add_fire_neighbor(&state->fires[3], &state->fires[0]);
 
     state->camera = (Camera){0, 0, window_width, window_height};
+    state->current_mode = MODE_PLAY;
+
+    // BAD: I don't think the editor stuff should be in the gamestate struct.
+    // In future we could maybe create a separate place to put this.
+    state->selected_fire = NULL;
 }
 
 void simulate_gamestate(GameState *state, float dt) {
@@ -47,11 +54,13 @@ void simulate_gamestate(GameState *state, float dt) {
     check_water_fire_collisions(state);
     update_fires(state, dt);
 
-    // Update camera to follow player
+    // Update camera to follow player (only in play mode)
     // TODO: make this lerp instead of instant movement.
     // Give the camera its own x/y velocity.
-    state->camera.x = state->player.x - (state->camera.w / 2);
-    state->camera.y = state->player.y - (state->camera.h / 2);
+    if (state->current_mode == MODE_PLAY) {
+        state->camera.x = state->player.x - (state->camera.w / 2);
+        state->camera.y = state->player.y - (state->camera.h / 2);
+    }
 }
 
 void cleanup_gamestate(GameState *state) {
@@ -189,5 +198,104 @@ void update_fires(GameState *state, float dt){
             }
         }
     }
+}
+
+// Helper function to find the index of a fire in the fires array
+int find_fire_index(GameState *state, Fire *fire) {
+    for (int i = 0; i < state->fire_count; i++) {
+        if (&state->fires[i] == fire) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void save_fire_layout(GameState *state, const char *filename) {
+    FILE *fp = fopen(filename, "w");
+    if (!fp) {
+        SDL_Log("Failed to open file for writing: %s", filename);
+        return;
+    }
+
+    // Write header
+    fprintf(fp, "FIRE_COUNT %d\n", state->fire_count);
+
+    // Write each fire
+    for (int i = 0; i < state->fire_count; i++) {
+        Fire *fire = &state->fires[i];
+        fprintf(fp, "%d: %f %f %f %f %f %d",
+                i, fire->x, fire->y, fire->w, fire->h, fire->health,
+                fire->neighbors_size);
+
+        // Write neighbor indices
+        for (int j = 0; j < fire->neighbors_size; j++) {
+            int neighbor_index = find_fire_index(state, fire->neighbors[j]);
+            fprintf(fp, " %d", neighbor_index);
+        }
+
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+    SDL_Log("Successfully saved fire layout to %s", filename);
+}
+
+void load_fire_layout(GameState *state, const char *filename) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
+        SDL_Log("Failed to open file for reading: %s", filename);
+        return;
+    }
+
+    // Read fire count
+    int fire_count;
+    if (fscanf(fp, "FIRE_COUNT %d\n", &fire_count) != 1) {
+        SDL_Log("Failed to read fire count from file");
+        fclose(fp);
+        return;
+    }
+
+    // Temporary storage for neighbor indices
+    int neighbor_indices[MAX_FIRES][MAX_NEIGHBORS];
+    int neighbor_counts[MAX_FIRES];
+
+    // First pass: Read fire data (positions, health)
+    for (int i = 0; i < fire_count && i < MAX_FIRES; i++) {
+        int idx, neighbor_count;
+        float x, y, w, h, health;
+
+        if (fscanf(fp, "%d: %f %f %f %f %f %d",
+                   &idx, &x, &y, &w, &h, &health, &neighbor_count) != 7) {
+            SDL_Log("Failed to read fire data at index %d", i);
+            break;
+        }
+
+        init_fire(&state->fires[idx], x, y, w, h, health);
+        neighbor_counts[idx] = neighbor_count;
+
+        // Read neighbor indices
+        for (int j = 0; j < neighbor_count && j < MAX_NEIGHBORS; j++) {
+            if (fscanf(fp, " %d", &neighbor_indices[idx][j]) != 1) {
+                SDL_Log("Failed to read neighbor index");
+                break;
+            }
+        }
+    }
+
+    state->fire_count = fire_count;
+
+    // Second pass: Set up neighbor pointers
+    for (int i = 0; i < fire_count; i++) {
+        Fire *fire = &state->fires[i];
+        for (int j = 0; j < neighbor_counts[i]; j++) {
+            int neighbor_idx = neighbor_indices[i][j];
+            if (neighbor_idx >= 0 && neighbor_idx < fire_count) {
+                add_fire_neighbor(fire, &state->fires[neighbor_idx]);
+            }
+        }
+    }
+
+    fclose(fp);
+    SDL_Log("Successfully loaded fire layout from %s", filename);
 }
 

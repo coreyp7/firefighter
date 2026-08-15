@@ -27,6 +27,10 @@ void render_gamestate(GameState *state){
     render_fires(renderer, state);
     render_water_particles(renderer, state);
 
+    // Render editor UI if in editor mode
+    if (state->current_mode == MODE_FIRE_EDITOR) {
+        render_editor_ui(renderer, state);
+    }
 }
 
 void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player,
@@ -45,6 +49,7 @@ void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *
 
 void render_water_particles(SDL_Renderer *renderer, GameState *state) {
     SDL_SetRenderDrawColor(renderer, 92, 181, 225, 255);
+    //SDL_SetRenderDrawColor(renderer, 150, 250, 0, 255);
     for (int i = 0; i < state->particle_count; i++) {
         if (!state->particles[i].active) {
             continue;
@@ -92,5 +97,88 @@ void render_fires(SDL_Renderer *renderer, GameState *state) {
     for (int i = 0; i < state->fire_count; i++) {
         render_fire(renderer, &state->fires[i], state->camera);
         debug_render_fire_health(renderer, &state->fires[i], state->camera);
+    }
+}
+
+void render_editor_ui(SDL_Renderer *renderer, GameState *state) {
+    // Draw mode indicator (simple colored rectangle for now)
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 100);
+    SDL_FRect mode_indicator = {10, 10, 300, 20};
+    SDL_RenderFillRect(renderer, &mode_indicator);
+
+    // Draw instruction text using debug renderer
+    // (We'll use SDL_Log for now since we need to add text rendering)
+
+    // Highlight selected fire with cyan outline
+    if (state->selected_fire != NULL) {
+        SDL_FRect fire_rect = {
+            state->selected_fire->x,
+            state->selected_fire->y,
+            state->selected_fire->w,
+            state->selected_fire->h
+        };
+
+        SDL_FPoint newpos = convert_pos_to_camera_pos(
+            state->camera, fire_rect.x, fire_rect.y
+        );
+        fire_rect.x = newpos.x;
+        fire_rect.y = newpos.y;
+
+        // Draw cyan highlight with thicker border
+        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+        // Draw 3 pixel thick outline
+        for (int i = -2; i <= 2; i++) {
+            SDL_FRect outline = {
+                fire_rect.x + i, fire_rect.y + i,
+                fire_rect.w - 2*i, fire_rect.h - 2*i
+            };
+            SDL_RenderRect(renderer, &outline);
+        }
+    }
+
+    // Highlight fire under cursor with white outline
+    float world_x = state->player.cursor_x + state->camera.x;
+    float world_y = state->player.cursor_y + state->camera.y;
+
+    Fire *fire_at_cursor = NULL;
+    for (int i = 0; i < state->fire_count; i++) {
+        Fire *fire = &state->fires[i];
+        SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
+
+        if (world_x >= fire_rect.x && world_x <= fire_rect.x + fire_rect.w &&
+            world_y >= fire_rect.y && world_y <= fire_rect.y + fire_rect.h) {
+            fire_at_cursor = fire;
+            break;
+        }
+    }
+
+    if (fire_at_cursor != NULL) {
+        SDL_FRect fire_rect = {
+            fire_at_cursor->x,
+            fire_at_cursor->y,
+            fire_at_cursor->w,
+            fire_at_cursor->h
+        };
+
+        SDL_FPoint newpos = convert_pos_to_camera_pos(
+            state->camera, fire_rect.x, fire_rect.y
+        );
+        fire_rect.x = newpos.x;
+        fire_rect.y = newpos.y;
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderRect(renderer, &fire_rect);
+    } else {
+        // Draw placement preview at cursor
+        SDL_FRect preview_rect = {
+            state->player.cursor_x - 25,
+            state->player.cursor_y - 25,
+            50, 50
+        };
+
+        SDL_SetRenderDrawColor(renderer, 255, 100, 0, 100);
+        SDL_RenderFillRect(renderer, &preview_rect);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150);
+        SDL_RenderRect(renderer, &preview_rect);
     }
 }
