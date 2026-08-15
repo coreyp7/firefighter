@@ -20,7 +20,7 @@ bool is_fire_alive(Fire *fire) {
     return health_percentage_relative >= 0.3;
 }
 
-void add_fire_neighbor(Fire *fire, Fire *neighbor){
+void add_fire_neighbor_one_way(Fire *fire, Fire *neighbor){
     if(fire->neighbors_size > MAX_NEIGHBORS){
         SDL_Log("Cannot add neighor to fire %p, at max neighbors.\n", &fire);
         return;
@@ -31,15 +31,30 @@ void add_fire_neighbor(Fire *fire, Fire *neighbor){
     fire->neighbors[fire->neighbors_size] = neighbor;
     fire->neighbors_size += 1;
 
+}
 
-    if(neighbor->neighbors_size > MAX_NEIGHBORS){
-        SDL_Log("Cannot add neighor to fire %p, at max neighbors.\n", &neighbor);
-        return;
-    }
-
-    // TODO: we should really check if they're already neighbors from
-    // either direction of the relationship.
-    neighbor->neighbors[neighbor->neighbors_size] = fire;
-    neighbor->neighbors_size += 1;
+void add_fire_neighbor(Fire *fire, Fire *neighbor){
+    add_fire_neighbor_one_way(fire, neighbor);
+    add_fire_neighbor_one_way(neighbor, fire);
+    // if(fire->neighbors_size > MAX_NEIGHBORS){
+    //     SDL_Log("Cannot add neighor to fire %p, at max neighbors.\n", &fire);
+    //     return;
+    // }
+    //
+    // // TODO: we should really check if they're already neighbors from
+    // // either direction of the relationship.
+    // fire->neighbors[fire->neighbors_size] = neighbor;
+    // fire->neighbors_size += 1;
+    //
+    //
+    // if(neighbor->neighbors_size > MAX_NEIGHBORS){
+    //     SDL_Log("Cannot add neighor to fire %p, at max neighbors.\n", &neighbor);
+    //     return;
+    // }
+    //
+    // // TODO: we should really check if they're already neighbors from
+    // // either direction of the relationship.
+    // neighbor->neighbors[neighbor->neighbors_size] = fire;
+    // neighbor->neighbors_size += 1;
 
 }

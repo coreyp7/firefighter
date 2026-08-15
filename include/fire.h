@@ -20,6 +20,7 @@ typedef struct Fire {
 
 void init_fire(Fire *fire, float x, float y, float w, float h, float health);
 bool is_fire_alive(Fire *fire);
+void add_fire_neighbor_one_way(Fire *fire, Fire *neighbor);
 void add_fire_neighbor(Fire *fire, Fire *neighbor);
 
 #endif

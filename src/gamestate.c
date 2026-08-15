@@ -254,6 +254,11 @@ void load_fire_layout(GameState *state, const char *filename) {
         fclose(fp);
         return;
     }
+    SDL_Log("Fire count loaded: %i\n", fire_count);
+
+    // Clear our current level before loading.
+    state->fire_count = 0;
+    memset(state->fires, 0, state->fire_count);
 
     // Temporary storage for neighbor indices
     int neighbor_indices[MAX_FIRES][MAX_NEIGHBORS];
@@ -281,6 +286,7 @@ void load_fire_layout(GameState *state, const char *filename) {
             }
         }
     }
+    SDL_Log("First read.\n");
 
     state->fire_count = fire_count;
 
@@ -290,10 +296,12 @@ void load_fire_layout(GameState *state, const char *filename) {
         for (int j = 0; j < neighbor_counts[i]; j++) {
             int neighbor_idx = neighbor_indices[i][j];
             if (neighbor_idx >= 0 && neighbor_idx < fire_count) {
-                add_fire_neighbor(fire, &state->fires[neighbor_idx]);
+                //add_fire_neighbor(fire, &state->fires[neighbor_idx]);
+                add_fire_neighbor_one_way(fire, &state->fires[neighbor_idx]);
             }
         }
     }
+    SDL_Log("Second pass read.\n");
 
     fclose(fp);
     SDL_Log("Successfully loaded fire layout from %s", filename);
