@@ -267,6 +267,7 @@ void load_fire_layout(GameState *state, const char *filename) {
 
     // Clear our current level before loading.
     pool_free_all(&state->fires_pool);
+    state->fire_count = 0;
     //memset(state->fires, 0, state->fire_count);
 
     // Temporary storage for neighbor indices
@@ -284,7 +285,6 @@ void load_fire_layout(GameState *state, const char *filename) {
             break;
         }
 
-        //init_fire(&state->fires[idx], x, y, w, h, health);
         Fire* fire = pool_alloc(&state->fires_pool);
         init_fire(fire, x, y, w, h, health);
         neighbor_counts[idx] = neighbor_count;

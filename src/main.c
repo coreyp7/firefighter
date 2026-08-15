@@ -303,7 +303,6 @@ void processEditorInput(GameState *state, InputBuffer *input) {
                             // BUG: segfault if we add more than the max allowed
                             // neighbors. Add a check here.
                             add_fire_neighbor(state->selected_fire, clicked_fire);
-                            add_fire_neighbor(clicked_fire, state->selected_fire);
                             SDL_Log("Connected fires as neighbors");
                             state->selected_fire = NULL;
                         }
@@ -354,6 +353,7 @@ void processEditorInput(GameState *state, InputBuffer *input) {
                         }
 
                         pool_free(&state->fires_pool, clicked_fire);
+                        state->fire_count -= 1;
 
                         SDL_Log("Deleted fire");
                     }

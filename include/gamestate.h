@@ -54,9 +54,6 @@ typedef struct GameState {
     int particle_count;
     Block blocks[MAX_BLOCK_AMOUNT];
     int block_count;
-    // TODO: we need to implement a pool-based allocator so that we can properly
-    // delete and add at will (random order). Check your old implementations.
-    //Fire fires[MAX_FIRES];
     Fire fires_buf[MAX_FIRES];
     Pool fires_pool;
     int fire_count;
