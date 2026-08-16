@@ -28,26 +28,14 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->blocks[3] = (Block){750, 500, 250, 250};
     state->blocks[4] = (Block){1000, 500, 250, 250};
 
-    // Initialize fires pool and add initial test fires.
-    // For now, we won't create any fires until loading.
     pool_init(
         &state->fires_pool,
         &state->fires_buf,
         MAX_FIRES * sizeof(Fire),
         sizeof(Fire)
     );
-    // Fire* fire1 = pool_alloc(fires_pool);
-    // fire1
-    // Couldn't we just add this process to init_fire?
-    // state->fire_count = 3;
-    // init_fire(&state->fires[0], 300, 400, 50, 50, 10);
-    // init_fire(&state->fires[1], 600, 450, 50, 50, 25);
-    // init_fire(&state->fires[2], 500, 300, 50, 50, 50);
 
-    // add_fire_neighbor(&state->fires[0], &state->fires[1]);
-    // add_fire_neighbor(&state->fires[1], &state->fires[2]);
-    // add_fire_neighbor(&state->fires[2], &state->fires[3]);
-    // add_fire_neighbor(&state->fires[3], &state->fires[0]);
+    // For now, we won't create any fires until loading.
 
     state->camera = (Camera){0, 0, window_width, window_height};
     state->current_mode = MODE_PLAY;
@@ -168,12 +156,17 @@ void check_water_fire_collisions(GameState *state) {
 
             SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
 
-            if (is_colliding(water_rect, fire_rect)) {
+            // Leaving commented for experimenting with later.
+            //int seconds = (SDL_GetTicks() - fire->last_put_out) / 1000;
+            //if (is_colliding(water_rect, fire_rect) && seconds > 4) {
+
+            if (is_colliding(water_rect, fire_rect)){
                 fire->health -= 1.0f;
                 if (fire->health <= 0) {
                     // TODO: get rid of this active logic.
                     // Just have it be a function that looks at the health.
                     fire->health = 0;
+                    fire->last_put_out = SDL_GetTicks();
                 }
 
                 // Kill the water particle
@@ -199,8 +192,9 @@ void update_fires(GameState *state, float dt){
 
         for(int j=0; j<fire->neighbors_size; j++){
             Fire *neighbor = fire->neighbors[j];
+            float seconds = (SDL_GetTicks() - fire->last_put_out) / 1000;
 
-            if(is_fire_alive(neighbor)){
+            if(is_fire_alive(neighbor) && seconds > 0.5){
             // TODO: update this to be dynamic based on how active
             // the neighbor fire is.
                 fire->health += 0.1;

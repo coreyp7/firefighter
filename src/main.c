@@ -310,8 +310,7 @@ void processEditorInput(GameState *state, InputBuffer *input) {
                         // WARN: THIS WILL CRASH IF YOU GO BEYOND FIRE LIMIT.
                         // Clicked on empty space - place new fire
                         Fire* fire = pool_alloc(&state->fires_pool);
-                        init_fire(fire,
-                                 world_x - 25, world_y - 25, 50, 50, 50);
+                        init_fire(fire, world_x - 25, world_y - 25, 50, 50, 10);
                         state->fire_count++;
                         SDL_Log("Placed new fire at (%f, %f)", world_x, world_y);
                         state->selected_fire = NULL;

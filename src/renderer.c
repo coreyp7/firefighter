@@ -98,6 +98,9 @@ void render_fires(SDL_Renderer *renderer, GameState *state) {
         if(!state->fires_buf[i].active) {
             continue;
         }
+        if(state->fires_buf[i].health <= 0) {
+            continue;
+        }
         render_fire(renderer, &state->fires_buf[i], state->camera);
         debug_render_fire_health(renderer, &state->fires_buf[i], state->camera);
     }
