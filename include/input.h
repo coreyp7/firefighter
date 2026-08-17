@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 
+// Forward declarations
+typedef struct GameState GameState;
+
 #define MAX_INPUT_EVENTS 64
 
 typedef enum InputType {
@@ -63,5 +66,10 @@ typedef struct InputBuffer {
 
 void init_input_buffer(InputBuffer *buffer);
 void gather_input(InputBuffer *buffer, bool *isRunning);
+
+// Main input processing functions
+void processInput(GameState *state, InputBuffer *input);
+void processPlayInput(GameState *state, InputBuffer *input);
+void processEditorInput(GameState *state, InputBuffer *input);
 
 #endif

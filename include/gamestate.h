@@ -70,7 +70,10 @@ void update_player(GameState *state, float dt);
 void check_water_fire_collisions(GameState *state);
 void update_fires(GameState *state, float dt);
 
-// These are editor functions but leaving in here for now.
+// Editor functions
+Fire* get_fire_at_position(GameState *state, float world_x, float world_y);
+void editor_handle_left_click(GameState *state, float world_x, float world_y);
+void editor_handle_right_click(GameState *state, float world_x, float world_y);
 void editor_delete_fire(GameState *state, Fire *fire);
 
 // TODO: these really shouldn't be here.

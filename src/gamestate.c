@@ -312,3 +312,84 @@ void load_fire_layout(GameState *state, const char *filename) {
     SDL_Log("Successfully loaded fire layout from %s", filename);
 }
 
+// Editor helper function to get fire at world position
+Fire* get_fire_at_position(GameState *state, float world_x, float world_y) {
+    for (int i = 0; i < state->fire_count; i++) {
+        Fire *fire = &state->fires_buf[i];
+
+        SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
+
+        // Check if point is inside fire rectangle
+        if (world_x >= fire_rect.x && world_x <= fire_rect.x + fire_rect.w &&
+            world_y >= fire_rect.y && world_y <= fire_rect.y + fire_rect.h) {
+            return fire;
+        }
+    }
+    return NULL;
+}
+
+void editor_handle_left_click(GameState *state, float world_x, float world_y) {
+    Fire *clicked_fire = get_fire_at_position(state, world_x, world_y);
+
+    if (clicked_fire != NULL) {
+        // Clicked on existing fire
+        if (state->selected_fire == NULL) {
+            // First click - select this fire
+            state->selected_fire = clicked_fire;
+            SDL_Log("Fire selected for neighbor connection");
+        } else if (state->selected_fire == clicked_fire) {
+            // Clicked same fire - deselect
+            state->selected_fire = NULL;
+            SDL_Log("Fire deselected");
+        } else {
+            // Second click - create neighbor connection
+            // BUG: segfault if we add more than the max allowed
+            // neighbors. Add a check here.
+            add_fire_neighbor(state->selected_fire, clicked_fire);
+            SDL_Log("Connected fires as neighbors");
+            state->selected_fire = NULL;
+        }
+    } else {
+        // WARN: THIS WILL CRASH IF YOU GO BEYOND FIRE LIMIT.
+        // Clicked on empty space - place new fire
+        Fire* fire = pool_alloc(&state->fires_pool);
+        init_fire(fire, world_x - 25, world_y - 25, 50, 50, 10);
+        state->fire_count++;
+        SDL_Log("Placed new fire at (%f, %f)", world_x, world_y);
+        state->selected_fire = NULL;
+    }
+}
+
+void editor_handle_right_click(GameState *state, float world_x, float world_y) {
+    Fire *clicked_fire = get_fire_at_position(state, world_x, world_y);
+
+    if (clicked_fire != NULL) {
+        // Remove this fire's neighbor references from all other fires
+        for (int i = 0; i < state->fire_count; i++) {
+            Fire *other_fire = &state->fires_buf[i];
+
+            for (int j = 0; j < other_fire->neighbors_size; j++) {
+                if (other_fire->neighbors[j] == clicked_fire) {
+                    // Shift neighbors array
+                    // TODO: this sucks
+                    for (int k = j; k < other_fire->neighbors_size - 1; k++) {
+                        other_fire->neighbors[k] = other_fire->neighbors[k + 1];
+                    }
+                    other_fire->neighbors_size--;
+                    break;
+                }
+            }
+        }
+
+        // Clear selected_fire if it was this fire
+        if (state->selected_fire == clicked_fire) {
+            state->selected_fire = NULL;
+        }
+
+        pool_free(&state->fires_pool, clicked_fire);
+        state->fire_count -= 1;
+
+        SDL_Log("Deleted fire");
+    }
+}
+

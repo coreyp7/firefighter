@@ -1,0 +1,8 @@
+#ifndef INPUT_CONFIG_H
+#define INPUT_CONFIG_H
+
+#define PLAYER_WALK_SPEED 250.0f
+#define PLAYER_JUMP_FORCE 350.0f
+#define EDITOR_CAMERA_SPEED 500.0f
+
+#endif
