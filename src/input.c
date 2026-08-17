@@ -1,11 +1,8 @@
 #include "input.h"
 #include "gamestate.h"
-#include "camera.h"
-#include "water_particles.h"
 #include "input_config.h"
 #include <SDL3/SDL.h>
 #include <string.h>
-#include <math.h>
 
 void init_input_buffer(InputBuffer *buffer) {
     memset(buffer, 0, sizeof(InputBuffer));
@@ -130,14 +127,8 @@ void processPlayInput(GameState *state, InputBuffer *input) {
         }
     }
 
-    // Continuous water shooting (spacebar held)
-    if (input->space_held) {
-        SDL_FPoint player_relative_pos = convert_pos_to_camera_pos(state->camera, player->x, player->y);
-        float dx = player->cursor_x - player_relative_pos.x;
-        float dy = player->cursor_y - player_relative_pos.y;
-        float angle = atan2f(dx, dy);
-        shoot_water_particle(state, player->x, player->y, angle);
-    }
+    // Update player shooting state based on spacebar
+    player->is_shooting_water = input->space_held;
 }
 
 // BAD: This thing needs to be split up.

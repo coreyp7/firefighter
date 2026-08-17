@@ -15,6 +15,7 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->player.cursor_x = 0.0;
     state->player.cursor_y = 0.0;
     state->player.is_facing_left = false;
+    state->player.is_shooting_water = false;
 
     state->particle_count = 0;
     // for (int i = 0; i < MAX_WATER_PARTICLES; i++) {
@@ -73,6 +74,8 @@ void update_player(GameState *state, float dt) {
     float oldy = player->y;
 
     player->yvel += PLAYER_GRAVITY * dt;
+    // TODO: improve logic around player x_vel on the ground with
+    // forces applied from water spray.
 
     // Check horizontal collisions
     player->x += player->xvel * dt;
@@ -117,6 +120,33 @@ void update_player(GameState *state, float dt) {
         player->is_facing_left = false;
     } else {
         player->is_facing_left = true;
+    }
+
+    // Handle water shooting
+    if (player->is_shooting_water) {
+        float dx = player->cursor_x - player_pos_relative.x;
+        float dy = player->cursor_y - player_pos_relative.y;
+        float angle = atan2f(dx, dy);
+        shoot_water_particle(state, player->x, player->y, angle);
+
+        // TODO: move normalize code into function in appropriate module.
+        float xsq = dx * dx;
+        float ysq = dy * dy;
+        float sum = xsq + ysq;
+        float magnitude = sqrt(sum);
+
+        float x_normal = dx / magnitude;
+        float y_normal = dy / magnitude;
+
+        if(y_normal > 0){
+            player->yvel += (-y_normal) * 25;
+        } else if (y_normal < 0){
+            //player->yvel += (-y_normal) * 3;
+        }
+
+        if(!player->is_grounded){
+            player->xvel += (-x_normal) * 2;
+        }
     }
 }
 
