@@ -1,5 +1,7 @@
 #include "input.h"
 #include "gamestate.h"
+#include "editor.h"
+#include "level_io.h"
 #include "input_config.h"
 #include <SDL3/SDL.h>
 #include <string.h>
@@ -131,13 +133,8 @@ void processPlayInput(GameState *state, InputBuffer *input) {
     player->is_shooting_water = input->space_held;
 }
 
-// BAD: This thing needs to be split up.
-void processEditorInput(GameState *state, InputBuffer *input) {
+void processEditorInput(EditorState *editor, GameState *state, InputBuffer *input, float dt) {
     // Process input events
-
-    // NOTE: this is fps based
-    // TODO: move this into some constant
-    const float camera_move_speed = 10.0f;
     for (int i = 0; i < input->event_count; i++) {
         InputEvent *event = &input->events[i];
 
@@ -148,8 +145,7 @@ void processEditorInput(GameState *state, InputBuffer *input) {
                     float world_x = event->mouse_x + state->camera.x;
                     float world_y = event->mouse_y + state->camera.y;
 
-                    // Delegate to gamestate to handle the editor logic
-                    editor_handle_left_click(state, world_x, world_y);
+                    editor_handle_left_click(editor, state, world_x, world_y);
                 }
                 break;
 
@@ -159,20 +155,16 @@ void processEditorInput(GameState *state, InputBuffer *input) {
                     float world_x = event->mouse_x + state->camera.x;
                     float world_y = event->mouse_y + state->camera.y;
 
-                    // Delegate to gamestate to handle the editor logic
-                    editor_handle_right_click(state, world_x, world_y);
+                    editor_handle_right_click(editor, state, world_x, world_y);
                 }
                 break;
 
-            // These are fine for now.
             case INPUT_EDITOR_SAVE:
-                save_fire_layout(state, "fire_layouts/default.txt");
-                SDL_Log("Saved fire layout to fire_layouts/default.txt");
+                level_save_fire_layout(state, "fire_layouts/default.txt");
                 break;
 
             case INPUT_EDITOR_LOAD:
-                load_fire_layout(state, "fire_layouts/default.txt");
-                SDL_Log("Loaded fire layout from fire_layouts/default.txt");
+                level_load_fire_layout(state, "fire_layouts/default.txt");
                 break;
 
             default:
@@ -180,22 +172,11 @@ void processEditorInput(GameState *state, InputBuffer *input) {
         }
     }
 
-    // Camera movement in editor mode (continuous, based on arrow keys)
-    if (input->arrow_left_held) {
-        state->camera.x -= camera_move_speed;
-    }
-    if (input->arrow_right_held) {
-        state->camera.x += camera_move_speed;
-    }
-    if (input->arrow_up_held) {
-        state->camera.y -= camera_move_speed;
-    }
-    if (input->arrow_down_held) {
-        state->camera.y += camera_move_speed;
-    }
+    // Camera movement in editor mode
+    editor_update_camera(editor, state, input, dt);
 }
 
-void processInput(GameState *state, InputBuffer *input) {
+void processInput(EditorState *editor, GameState *state, InputBuffer *input, float dt) {
     Player *player = &state->player;
 
     // Process each input event
@@ -204,17 +185,10 @@ void processInput(GameState *state, InputBuffer *input) {
 
         switch (event->type) {
             case INPUT_TOGGLE_MODE:
-                if (state->current_mode == MODE_PLAY) {
-                    state->current_mode = MODE_FIRE_EDITOR;
-                    state->selected_fire = NULL;
-                    SDL_Log("Switched to FIRE EDITOR mode");
+                if (editor_is_active(editor)) {
+                    editor_deactivate(editor, state);
                 } else {
-                    state->current_mode = MODE_PLAY;
-                    state->selected_fire = NULL;
-                    // Reset camera to follow player when switching back to play mode
-                    state->camera.x = state->player.x - (state->camera.w / 2);
-                    state->camera.y = state->player.y - (state->camera.h / 2);
-                    SDL_Log("Switched to PLAY mode");
+                    editor_activate(editor, state);
                 }
                 break;
 
@@ -229,9 +203,9 @@ void processInput(GameState *state, InputBuffer *input) {
     player->cursor_y = input->mouse_y;
 
     // Branch based on current mode
-    if (state->current_mode == MODE_PLAY) {
+    if (editor_is_active(editor)) {
+        processEditorInput(editor, state, input, dt);
+    } else {
         processPlayInput(state, input);
-    } else if (state->current_mode == MODE_FIRE_EDITOR) {
-        processEditorInput(state, input);
     }
 }

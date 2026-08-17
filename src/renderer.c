@@ -1,9 +1,10 @@
 #include "renderer.h"
+#include "editor.h"
 #include "camera.h"
 #include "debug.h"
 #include <SDL3/SDL.h>
 
-void render_gamestate(GameState *state){
+void render_gamestate(EditorState *editor, GameState *state){
     // Render
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
@@ -28,8 +29,8 @@ void render_gamestate(GameState *state){
     render_water_particles(renderer, state);
 
     // Render editor UI if in editor mode
-    if (state->current_mode == MODE_FIRE_EDITOR) {
-        render_editor_ui(renderer, state);
+    if (editor_is_active(editor)) {
+        render_editor_ui(renderer, editor, state);
     }
 }
 
@@ -106,7 +107,7 @@ void render_fires(SDL_Renderer *renderer, GameState *state) {
     }
 }
 
-void render_editor_ui(SDL_Renderer *renderer, GameState *state) {
+void render_editor_ui(SDL_Renderer *renderer, EditorState *editor, GameState *state) {
     // Draw mode indicator (simple colored rectangle for now)
     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 100);
     SDL_FRect mode_indicator = {10, 10, 300, 20};
@@ -116,12 +117,13 @@ void render_editor_ui(SDL_Renderer *renderer, GameState *state) {
     // (We'll use SDL_Log for now since we need to add text rendering)
 
     // Highlight selected fire with cyan outline
-    if (state->selected_fire != NULL) {
+    Fire *selected_fire = editor_get_selected_fire(editor);
+    if (selected_fire != NULL) {
         SDL_FRect fire_rect = {
-            state->selected_fire->x,
-            state->selected_fire->y,
-            state->selected_fire->w,
-            state->selected_fire->h
+            selected_fire->x,
+            selected_fire->y,
+            selected_fire->w,
+            selected_fire->h
         };
 
         SDL_FPoint newpos = convert_pos_to_camera_pos(
@@ -146,17 +148,7 @@ void render_editor_ui(SDL_Renderer *renderer, GameState *state) {
     float world_x = state->player.cursor_x + state->camera.x;
     float world_y = state->player.cursor_y + state->camera.y;
 
-    Fire *fire_at_cursor = NULL;
-    for (int i = 0; i < state->fire_count; i++) {
-        Fire *fire = &state->fires_buf[i];
-        SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
-
-        if (world_x >= fire_rect.x && world_x <= fire_rect.x + fire_rect.w &&
-            world_y >= fire_rect.y && world_y <= fire_rect.y + fire_rect.h) {
-            fire_at_cursor = fire;
-            break;
-        }
-    }
+    Fire *fire_at_cursor = editor_get_fire_at_position(state, world_x, world_y);
 
     if (fire_at_cursor != NULL) {
         SDL_FRect fire_rect = {

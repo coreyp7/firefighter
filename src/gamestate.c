@@ -39,11 +39,6 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     // For now, we won't create any fires until loading.
 
     state->camera = (Camera){0, 0, window_width, window_height};
-    state->current_mode = MODE_PLAY;
-
-    // BAD: I don't think the editor stuff should be in the gamestate struct.
-    // In future we could maybe create a separate place to put this.
-    state->selected_fire = NULL;
 }
 
 void simulate_gamestate(GameState *state, float dt) {
@@ -51,14 +46,6 @@ void simulate_gamestate(GameState *state, float dt) {
     simulate_water_particles(state, dt);
     check_water_fire_collisions(state);
     update_fires(state, dt);
-
-    // Update camera to follow player (only in play mode)
-    // TODO: make this lerp instead of instant movement.
-    // Give the camera its own x/y velocity.
-    if (state->current_mode == MODE_PLAY) {
-        state->camera.x = state->player.x - (state->camera.w / 2);
-        state->camera.y = state->player.y - (state->camera.h / 2);
-    }
 }
 
 void cleanup_gamestate(GameState *state) {
@@ -138,8 +125,9 @@ void update_player(GameState *state, float dt) {
         float x_normal = dx / magnitude;
         float y_normal = dy / magnitude;
 
+        // TODO: put these into constants
         if(y_normal > 0){
-            player->yvel += (-y_normal) * 25;
+            player->yvel += (-y_normal) * 10;
         } else if (y_normal < 0){
             //player->yvel += (-y_normal) * 3;
         }
@@ -233,117 +221,62 @@ void update_fires(GameState *state, float dt){
     }
 }
 
-// Helper function to find the index of a fire in the fires array
-int find_fire_index(GameState *state, Fire *fire) {
-    for (int i = 0; i < state->fire_count; i++) {
-        if (&state->fires_buf[i] == fire) {
-            return i;
-        }
+// ============================================================================
+// GameState editor api (here for now)
+// ============================================================================
+
+Fire* gamestate_add_fire(GameState *state, float x, float y, float w, float h, float health) {
+    if (state->fire_count >= MAX_FIRES) {
+        SDL_Log("ERROR: Cannot add fire - max fires (%d) reached", MAX_FIRES);
+        return NULL;
     }
-    return -1;
+
+    Fire *fire = pool_alloc(&state->fires_pool);
+    if (fire == NULL) {
+        SDL_Log("ERROR: Cannot add fire - pool allocation failed");
+        return NULL;
+    }
+
+    init_fire(fire, x, y, w, h, health);
+    state->fire_count++;
+
+    return fire;
 }
 
-void save_fire_layout(GameState *state, const char *filename) {
-    FILE *fp = fopen(filename, "w");
-    if (!fp) {
-        SDL_Log("Failed to open file for writing: %s", filename);
+void gamestate_remove_fire(GameState *state, Fire *fire) {
+    if (fire == NULL) {
         return;
     }
 
-    // Write header
-    fprintf(fp, "FIRE_COUNT %d\n", state->fire_count);
-
-    // Write each fire
+    // Remove this fire's references from all other fires' neighbor lists
+    // BAD: fine for now but pretty lazy.
     for (int i = 0; i < state->fire_count; i++) {
-        Fire *fire = &state->fires_buf[i];
-        fprintf(fp, "%d: %f %f %f %f %f %d",
-                i, fire->x, fire->y, fire->w, fire->h, fire->health,
-                fire->neighbors_size);
+        Fire *other_fire = &state->fires_buf[i];
 
-        // Write neighbor indices
-        for (int j = 0; j < fire->neighbors_size; j++) {
-            int neighbor_index = find_fire_index(state, fire->neighbors[j]);
-            fprintf(fp, " %d", neighbor_index);
+        // Skip if this is the fire being deleted
+        if (other_fire == fire) {
+            continue;
         }
 
-        fprintf(fp, "\n");
-    }
-
-    fclose(fp);
-    SDL_Log("Successfully saved fire layout to %s", filename);
-}
-
-void load_fire_layout(GameState *state, const char *filename) {
-    FILE *fp = fopen(filename, "r");
-    if (!fp) {
-        SDL_Log("Failed to open file for reading: %s", filename);
-        return;
-    }
-
-    // Read fire count
-    int fire_count;
-    if (fscanf(fp, "FIRE_COUNT %d\n", &fire_count) != 1) {
-        SDL_Log("Failed to read fire count from file");
-        fclose(fp);
-        return;
-    }
-    SDL_Log("Fire count loaded: %i\n", fire_count);
-
-    // Clear our current level before loading.
-    pool_free_all(&state->fires_pool);
-    state->fire_count = 0;
-    //memset(state->fires, 0, state->fire_count);
-
-    // Temporary storage for neighbor indices
-    int neighbor_indices[MAX_FIRES][MAX_NEIGHBORS];
-    int neighbor_counts[MAX_FIRES];
-
-    // First pass: Read fire data (positions, health)
-    for (int i = 0; i < fire_count && i < MAX_FIRES; i++) {
-        int idx, neighbor_count;
-        float x, y, w, h, health;
-
-        if (fscanf(fp, "%d: %f %f %f %f %f %d",
-                   &idx, &x, &y, &w, &h, &health, &neighbor_count) != 7) {
-            SDL_Log("Failed to read fire data at index %d", i);
-            break;
-        }
-
-        Fire* fire = pool_alloc(&state->fires_pool);
-        init_fire(fire, x, y, w, h, health);
-        neighbor_counts[idx] = neighbor_count;
-
-        // Read neighbor indices
-        for (int j = 0; j < neighbor_count && j < MAX_NEIGHBORS; j++) {
-            if (fscanf(fp, " %d", &neighbor_indices[idx][j]) != 1) {
-                SDL_Log("Failed to read neighbor index");
+        for (int j = 0; j < other_fire->neighbors_size; j++) {
+            if (other_fire->neighbors[j] == fire) {
+                // Shift neighbors array to remove this reference
+                // TODO: look into this, maybe broken
+                for (int k = j; k < other_fire->neighbors_size - 1; k++) {
+                    other_fire->neighbors[k] = other_fire->neighbors[k + 1];
+                }
+                other_fire->neighbors_size--;
                 break;
             }
         }
     }
-    SDL_Log("First read.\n");
 
-    state->fire_count = fire_count;
-
-    // Second pass: Set up neighbor pointers
-    for (int i = 0; i < fire_count; i++) {
-        Fire *fire = &state->fires_buf[i];
-        for (int j = 0; j < neighbor_counts[i]; j++) {
-            int neighbor_idx = neighbor_indices[i][j];
-            if (neighbor_idx >= 0 && neighbor_idx < fire_count) {
-                //add_fire_neighbor(fire, &state->fires[neighbor_idx]);
-                add_fire_neighbor_one_way(fire, &state->fires_buf[neighbor_idx]);
-            }
-        }
-    }
-    SDL_Log("Second pass read.\n");
-
-    fclose(fp);
-    SDL_Log("Successfully loaded fire layout from %s", filename);
+    // Free the fire from the pool
+    pool_free(&state->fires_pool, fire);
+    state->fire_count--;
 }
 
-// Editor helper function to get fire at world position
-Fire* get_fire_at_position(GameState *state, float world_x, float world_y) {
+Fire* gamestate_find_fire_at_position(GameState *state, float world_x, float world_y) {
     for (int i = 0; i < state->fire_count; i++) {
         Fire *fire = &state->fires_buf[i];
 
@@ -358,68 +291,54 @@ Fire* get_fire_at_position(GameState *state, float world_x, float world_y) {
     return NULL;
 }
 
-void editor_handle_left_click(GameState *state, float world_x, float world_y) {
-    Fire *clicked_fire = get_fire_at_position(state, world_x, world_y);
-
-    if (clicked_fire != NULL) {
-        // Clicked on existing fire
-        if (state->selected_fire == NULL) {
-            // First click - select this fire
-            state->selected_fire = clicked_fire;
-            SDL_Log("Fire selected for neighbor connection");
-        } else if (state->selected_fire == clicked_fire) {
-            // Clicked same fire - deselect
-            state->selected_fire = NULL;
-            SDL_Log("Fire deselected");
-        } else {
-            // Second click - create neighbor connection
-            // BUG: segfault if we add more than the max allowed
-            // neighbors. Add a check here.
-            add_fire_neighbor(state->selected_fire, clicked_fire);
-            SDL_Log("Connected fires as neighbors");
-            state->selected_fire = NULL;
-        }
-    } else {
-        // WARN: THIS WILL CRASH IF YOU GO BEYOND FIRE LIMIT.
-        // Clicked on empty space - place new fire
-        Fire* fire = pool_alloc(&state->fires_pool);
-        init_fire(fire, world_x - 25, world_y - 25, 50, 50, 10);
-        state->fire_count++;
-        SDL_Log("Placed new fire at (%f, %f)", world_x, world_y);
-        state->selected_fire = NULL;
+bool gamestate_connect_fires(GameState *state, Fire *fire1, Fire *fire2) {
+    if (fire1 == NULL || fire2 == NULL) {
+        SDL_Log("ERROR: Cannot connect NULL fires");
+        return false;
     }
+
+    if (fire1 == fire2) {
+        SDL_Log("ERROR: Cannot connect fire to itself");
+        return false;
+    }
+
+    if (fire1->neighbors_size >= MAX_NEIGHBORS) {
+        SDL_Log("ERROR: Fire at (%f, %f) already has max neighbors (%d)",
+                fire1->x, fire1->y, MAX_NEIGHBORS);
+        return false;
+    }
+
+    if (fire2->neighbors_size >= MAX_NEIGHBORS) {
+        SDL_Log("ERROR: Fire at (%f, %f) already has max neighbors (%d)",
+                fire2->x, fire2->y, MAX_NEIGHBORS);
+        return false;
+    }
+
+    for (int i = 0; i < fire1->neighbors_size; i++) {
+        if (fire1->neighbors[i] == fire2) {
+            SDL_Log("WARNING: Fires are already neighbors");
+            return false;
+        }
+    }
+
+    add_fire_neighbor(fire1, fire2);
+
+    return true;
 }
 
-void editor_handle_right_click(GameState *state, float world_x, float world_y) {
-    Fire *clicked_fire = get_fire_at_position(state, world_x, world_y);
-
-    if (clicked_fire != NULL) {
-        // Remove this fire's neighbor references from all other fires
-        for (int i = 0; i < state->fire_count; i++) {
-            Fire *other_fire = &state->fires_buf[i];
-
-            for (int j = 0; j < other_fire->neighbors_size; j++) {
-                if (other_fire->neighbors[j] == clicked_fire) {
-                    // Shift neighbors array
-                    // TODO: this sucks
-                    for (int k = j; k < other_fire->neighbors_size - 1; k++) {
-                        other_fire->neighbors[k] = other_fire->neighbors[k + 1];
-                    }
-                    other_fire->neighbors_size--;
-                    break;
-                }
-            }
-        }
-
-        // Clear selected_fire if it was this fire
-        if (state->selected_fire == clicked_fire) {
-            state->selected_fire = NULL;
-        }
-
-        pool_free(&state->fires_pool, clicked_fire);
-        state->fire_count -= 1;
-
-        SDL_Log("Deleted fire");
+void gamestate_disconnect_fire(GameState *state, Fire *fire) {
+    if (fire == NULL) {
+        return;
     }
+
+    gamestate_remove_fire(state, fire);
+}
+
+int gamestate_get_fire_count(GameState *state) {
+    return state->fire_count;
+}
+
+Fire* gamestate_get_fires_buffer(GameState *state) {
+    return state->fires_buf;
 }
 

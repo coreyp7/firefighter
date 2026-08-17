@@ -11,11 +11,6 @@
 
 #define PLAYER_GRAVITY 700
 
-// NOTE: I don't know if I want this here.
-typedef enum GameMode {
-    MODE_PLAY,
-    MODE_FIRE_EDITOR
-} GameMode;
 
 typedef struct Player {
     float x;
@@ -59,8 +54,6 @@ typedef struct GameState {
     Pool fires_pool;
     int fire_count;
     Camera camera;
-    GameMode current_mode;
-    Fire *selected_fire;
 } GameState;
 
 void init_gamestate(GameState *state, int window_width, int window_height);
@@ -71,16 +64,16 @@ void update_player(GameState *state, float dt);
 void check_water_fire_collisions(GameState *state);
 void update_fires(GameState *state, float dt);
 
-// Editor functions
-Fire* get_fire_at_position(GameState *state, float world_x, float world_y);
-void editor_handle_left_click(GameState *state, float world_x, float world_y);
-void editor_handle_right_click(GameState *state, float world_x, float world_y);
-void editor_delete_fire(GameState *state, Fire *fire);
+// GameState Fire Management API
+// NOTE: In future, maybe we can split this up across files in a dir.
+// For now, all of these are in this single header.
+Fire* gamestate_add_fire(GameState *state, float x, float y, float w, float h, float health);
+void gamestate_remove_fire(GameState *state, Fire *fire);
+Fire* gamestate_find_fire_at_position(GameState *state, float world_x, float world_y);
+bool gamestate_connect_fires(GameState *state, Fire *fire1, Fire *fire2);
+void gamestate_disconnect_fire(GameState *state, Fire *fire);
+int gamestate_get_fire_count(GameState *state);
+Fire* gamestate_get_fires_buffer(GameState *state);
 
-// TODO: these really shouldn't be here.
-// Put these into a module for file io
-void save_fire_layout(GameState *state, const char *filename);
-void load_fire_layout(GameState *state, const char *filename);
-int find_fire_index(GameState *state, Fire *fire);
 
 #endif

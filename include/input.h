@@ -5,6 +5,7 @@
 
 // Forward declarations
 typedef struct GameState GameState;
+typedef struct EditorState EditorState;
 
 #define MAX_INPUT_EVENTS 64
 
@@ -68,8 +69,8 @@ void init_input_buffer(InputBuffer *buffer);
 void gather_input(InputBuffer *buffer, bool *isRunning);
 
 // Main input processing functions
-void processInput(GameState *state, InputBuffer *input);
+void processInput(EditorState *editor, GameState *state, InputBuffer *input, float dt);
 void processPlayInput(GameState *state, InputBuffer *input);
-void processEditorInput(GameState *state, InputBuffer *input);
+void processEditorInput(EditorState *editor, GameState *state, InputBuffer *input, float dt);
 
 #endif

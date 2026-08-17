@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "gamestate.h"
+#include "editor.h"
 #include "water_particles.h"
 #include "camera.h"
 #include "debug.h"
@@ -60,6 +61,10 @@ int main(int argc, char *argv[]) {
 
     GameState state;
     init_gamestate(&state, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    EditorState editor;
+    editor_init(&editor);
+
     float dt = 0.0;
     uint32 last_state_update = SDL_GetTicks();
 
@@ -75,13 +80,20 @@ int main(int argc, char *argv[]) {
 
         gather_input(&input_buffer, &isRunning);
 
-        processInput(&state, &input_buffer);
+        processInput(&editor, &state, &input_buffer, dt);
 
         dt = (SDL_GetTicks() - last_state_update) / 1000.f;
         last_state_update = SDL_GetTicks();
         simulate_gamestate(&state, dt);
 
-        render_gamestate(&state);
+        // Update camera to follow player in play mode
+        // TODO: make this lerp instead of instant movement.
+        if (!editor_is_active(&editor)) {
+            state.camera.x = state.player.x - (state.camera.w / 2);
+            state.camera.y = state.player.y - (state.camera.h / 2);
+        }
+
+        render_gamestate(&editor, &state);
 
         // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;
