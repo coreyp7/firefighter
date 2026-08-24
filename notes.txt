@@ -1,0 +1,78 @@
+
+- Need to refactor everything so that rendering is easier and we're not passing
+the fucking camera everywhere.
+Camera is kindof a gamestate thing which is odd, but we also require it in our
+renderer. What do I do about this?
+A:
+- put the camera struct typedef in a new module (just a typedef of SDL_FRect)
+    - put a camera variable in the gamestate; this will be the global camera
+- put all camera related functions in here (currently just the convert coordinates
+function)
+- improve the function to take a SDL_FRect for now since everything is an FRect
+Now the renderer and the gamestate
+
+Also would be cool to update this function to take a few different parameters.
+With _Generic.
+
+
+
+8/14/2026:
+- make fires a tree structure
+
+@1:48pm:
+- don't kill fire forever once inacive
+    - draw dead fires, since their health can be above 0
+- dynamically render fire height depending on health
+
+challenge: how can we make it easier to place many of these and save it to a file?
+maybe just a basic layout file that we can serialize the current state to.
+How difficult would implementing a basic editor be? Maybe use imgui for help.
+
+@2:43pm:
+- Need to add a timer so that a fire is dead for at least a few seconds
+before reigniting. Blowing through a group of fires is impossible rn.
+
+8/15/2026:
+- Adding pool allocator. Needs to be added to
+    - load_fire_layout
+    - init_fire
+    - wherever deleting happens (in main right now)
+
+@12:03pm:
+Confused by using a pool for a sec, but should work.
+We can still loop through the memory buffer for the fires for all of our
+operations, but we have to do two things:
+- add an "active" flag so we know if the Fire isn't garbage
+- alter logic in places where we loop over the list of fires
+
+8/16/2026 @7:17pm.
+What are the next steps? Currently:
+- basic controls
+- can shoot water at fires to put them out
+- fires have some reignition behavior and tree connections
+- editor for laying out fires and saving/loading to file
+
+Stuff I have probably written down:
+- water physics with player, ala sunshine
+    - makes a more interesting platformer
+- gimmicks with the hose
+    - cement
+- Drafting gameplay gimmicks, start drafting levels
+
+Let's start with the water physics, since I think it will be straightforward.
+- need to pass cursor postition to player struct
+- pass 'is_firing' flag
+
+A comment I left in main a few days ago:
+- shooting water should have a tangible physics feedback for gamefeel and fun.
+Allow player to gain speed by shooting water behind them.
+- idea: allow player to walk on water shot? Maybe a different material could
+allow the player to walk on it, powerup?
+
+
+8/18/2026 @9:27pm:
+- steam coming from the fire being put out (or left lit) will push you upwards
+
+8/24/2026 @2:53pm:
+- Make it so fires don't start generating immediately
+    - right now it doesn't feel good to put fires out

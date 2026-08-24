@@ -5,19 +5,24 @@
 
 void editor_init(EditorState *editor) {
     editor->selected_fire = NULL;
+    editor->selected_block = NULL;
     editor->is_active = false;
     editor->camera_move_speed = 10.0f;
+    editor->current_mode = EDITOR_MODE_FIRE;
 }
 
 void editor_activate(EditorState *editor, GameState *game) {
     editor->is_active = true;
     editor->selected_fire = NULL;
+    editor->selected_block = NULL;
+    editor->current_mode = EDITOR_MODE_FIRE;
     SDL_Log("Switched to FIRE EDITOR mode");
 }
 
 void editor_deactivate(EditorState *editor, GameState *game) {
     editor->is_active = false;
     editor->selected_fire = NULL;
+    editor->selected_block = NULL;
 
     // Reset camera to follow player when switching back to play mode
     game->camera.x = game->player.x - (game->camera.w / 2);
@@ -102,4 +107,78 @@ Fire* editor_get_selected_fire(EditorState *editor) {
 
 bool editor_is_active(EditorState *editor) {
     return editor->is_active;
+}
+
+// ============================================================================
+// Block editor operations
+// ============================================================================
+
+void editor_handle_block_left_click(EditorState *editor, GameState *game, float world_x, float world_y) {
+    Block *clicked_block = gamestate_find_block_at_position(game, world_x, world_y);
+
+    if (clicked_block != NULL) {
+        if (editor->selected_block == clicked_block) {
+            // Clicked same block, deselect it
+            editor->selected_block = NULL;
+            SDL_Log("Block deselected");
+        } else {
+            // Clicked different block, select it
+            editor->selected_block = clicked_block;
+            SDL_Log("Block selected");
+        }
+    } else {
+        // Clicked on nothing, place new block (250x250 default size)
+        Block *block = gamestate_add_block(game, world_x - 125, world_y - 125, 250, 250);
+
+        if (block != NULL) {
+            SDL_Log("Placed new block at (%f, %f)", world_x, world_y);
+        }
+
+        editor->selected_block = NULL;
+    }
+}
+
+void editor_handle_block_right_click(EditorState *editor, GameState *game, float world_x, float world_y) {
+    Block *clicked_block = gamestate_find_block_at_position(game, world_x, world_y);
+
+    if (clicked_block != NULL) {
+        if (editor->selected_block == clicked_block) {
+            editor->selected_block = NULL;
+        }
+
+        // Remove block
+        gamestate_remove_block(game, clicked_block);
+
+        SDL_Log("Deleted block");
+    }
+}
+
+Block* editor_get_block_at_position(GameState *game, float world_x, float world_y) {
+    return gamestate_find_block_at_position(game, world_x, world_y);
+}
+
+Block* editor_get_selected_block(EditorState *editor) {
+    return editor->selected_block;
+}
+
+// ============================================================================
+// Mode management
+// ============================================================================
+
+void editor_set_mode_fire(EditorState *editor) {
+    editor->current_mode = EDITOR_MODE_FIRE;
+    editor->selected_fire = NULL;
+    editor->selected_block = NULL;
+    SDL_Log("Switched to FIRE editor mode");
+}
+
+void editor_set_mode_block(EditorState *editor) {
+    editor->current_mode = EDITOR_MODE_BLOCK;
+    editor->selected_fire = NULL;
+    editor->selected_block = NULL;
+    SDL_Log("Switched to BLOCK editor mode");
+}
+
+EditorMode editor_get_mode(EditorState *editor) {
+    return editor->current_mode;
 }

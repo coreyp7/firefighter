@@ -55,6 +55,12 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
                 } else if (event.key.key == SDLK_P) {
                     input_event->type = INPUT_EDITOR_SAVE;
                     buffer->event_count++;
+                } else if (event.key.key == SDLK_1) {
+                    input_event->type = INPUT_EDITOR_MODE_FIRE;
+                    buffer->event_count++;
+                } else if (event.key.key == SDLK_2) {
+                    input_event->type = INPUT_EDITOR_MODE_BLOCK;
+                    buffer->event_count++;
                 }
                 break;
 
@@ -145,7 +151,11 @@ void processEditorInput(EditorState *editor, GameState *state, InputBuffer *inpu
                     float world_x = event->mouse_x + state->camera.x;
                     float world_y = event->mouse_y + state->camera.y;
 
-                    editor_handle_left_click(editor, state, world_x, world_y);
+                    if (editor_get_mode(editor) == EDITOR_MODE_FIRE) {
+                        editor_handle_left_click(editor, state, world_x, world_y);
+                    } else {
+                        editor_handle_block_left_click(editor, state, world_x, world_y);
+                    }
                 }
                 break;
 
@@ -155,7 +165,11 @@ void processEditorInput(EditorState *editor, GameState *state, InputBuffer *inpu
                     float world_x = event->mouse_x + state->camera.x;
                     float world_y = event->mouse_y + state->camera.y;
 
-                    editor_handle_right_click(editor, state, world_x, world_y);
+                    if (editor_get_mode(editor) == EDITOR_MODE_FIRE) {
+                        editor_handle_right_click(editor, state, world_x, world_y);
+                    } else {
+                        editor_handle_block_right_click(editor, state, world_x, world_y);
+                    }
                 }
                 break;
 
@@ -165,6 +179,14 @@ void processEditorInput(EditorState *editor, GameState *state, InputBuffer *inpu
 
             case INPUT_EDITOR_LOAD:
                 level_load_fire_layout(state, "fire_layouts/default.txt");
+                break;
+
+            case INPUT_EDITOR_MODE_FIRE:
+                editor_set_mode_fire(editor);
+                break;
+
+            case INPUT_EDITOR_MODE_BLOCK:
+                editor_set_mode_block(editor);
                 break;
 
             default:

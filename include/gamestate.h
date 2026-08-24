@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 #include "camera.h"
 #include "fire.h"
+#include "block.h"
 #include "pool.h"
 
 #define MAX_WATER_PARTICLES 500
@@ -37,18 +38,12 @@ typedef struct WaterParticle {
     SDL_FColor color;
 } WaterParticle;
 
-typedef struct Block {
-    float x;
-    float y;
-    float w;
-    float h;
-} Block;
-
 typedef struct GameState {
     Player player;
     WaterParticle particles[MAX_WATER_PARTICLES];
     int particle_count;
-    Block blocks[MAX_BLOCK_AMOUNT];
+    Block blocks_buf[MAX_BLOCK_AMOUNT];
+    Pool blocks_pool;
     int block_count;
     Fire fires_buf[MAX_FIRES];
     Pool fires_pool;
@@ -74,6 +69,13 @@ bool gamestate_connect_fires(GameState *state, Fire *fire1, Fire *fire2);
 void gamestate_disconnect_fire(GameState *state, Fire *fire);
 int gamestate_get_fire_count(GameState *state);
 Fire* gamestate_get_fires_buffer(GameState *state);
+
+// GameState Block Management API
+Block* gamestate_add_block(GameState *state, float x, float y, float w, float h);
+void gamestate_remove_block(GameState *state, Block *block);
+Block* gamestate_find_block_at_position(GameState *state, float world_x, float world_y);
+int gamestate_get_block_count(GameState *state);
+Block* gamestate_get_blocks_buffer(GameState *state);
 
 
 #endif

@@ -2,6 +2,7 @@
 #include "water_particles.h"
 #include "camera.h"
 #include "fire.h"
+#include "block.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,25 +19,31 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->player.is_shooting_water = false;
 
     state->particle_count = 0;
-    // for (int i = 0; i < MAX_WATER_PARTICLES; i++) {
-    //     state->particles[i].active = false;
-    // }
 
-    state->block_count = 5;
-    state->blocks[0] = (Block){0, 500, 250, 250};
-    state->blocks[1] = (Block){250, 500, 250, 250};
-    state->blocks[2] = (Block){500, 500, 250, 250};
-    state->blocks[3] = (Block){750, 500, 250, 250};
-    state->blocks[4] = (Block){1000, 500, 250, 250};
+    // Initialize blocks pool
+    pool_init(
+        &state->blocks_pool,
+        &state->blocks_buf,
+        MAX_BLOCK_AMOUNT * sizeof(Block),
+        sizeof(Block)
+    );
+    state->block_count = 0;
 
+    // Add default blocks
+    gamestate_add_block(state, 0, 500, 250, 250);
+    gamestate_add_block(state, 250, 500, 250, 250);
+    gamestate_add_block(state, 500, 500, 250, 250);
+    gamestate_add_block(state, 750, 500, 250, 250);
+    gamestate_add_block(state, 1000, 500, 250, 250);
+
+    // Initialize fires pool
     pool_init(
         &state->fires_pool,
         &state->fires_buf,
         MAX_FIRES * sizeof(Fire),
         sizeof(Fire)
     );
-
-    // For now, we won't create any fires until loading.
+    state->fire_count = 0;
 
     state->camera = (Camera){0, 0, window_width, window_height};
 }
@@ -68,7 +75,7 @@ void update_player(GameState *state, float dt) {
     player->x += player->xvel * dt;
     player_rect.x = player->x;
     for (int i = 0; i < state->block_count; i++) {
-        Block *block = &state->blocks[i];
+        Block *block = &state->blocks_buf[i];
         SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
         if(is_colliding(player_rect, block_rect)){
             player->x = oldx;
@@ -83,7 +90,7 @@ void update_player(GameState *state, float dt) {
     player_rect.y = player->y;
     bool collided_vertically = false;
     for (int i = 0; i < state->block_count; i++) {
-        Block *block = &state->blocks[i];
+        Block *block = &state->blocks_buf[i];
         SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
         if(is_colliding(player_rect, block_rect)){
             player->is_grounded = true;
@@ -113,7 +120,13 @@ void update_player(GameState *state, float dt) {
     if (player->is_shooting_water) {
         float dx = player->cursor_x - player_pos_relative.x;
         float dy = player->cursor_y - player_pos_relative.y;
-        float angle = atan2f(dx, dy);
+
+        float noise = (rand() % 5);
+        noise = noise / 10.f;
+        float angle = atan2f(dx, dy) + noise;
+        //float angle = atan2f(dx, dy);
+        SDL_Log("angle: %f\n", angle);
+        SDL_Log("noise: %f\n", noise);
         shoot_water_particle(state, player->x, player->y, angle);
 
         // TODO: move normalize code into function in appropriate module.
@@ -180,6 +193,8 @@ void check_water_fire_collisions(GameState *state) {
 
             if (is_colliding(water_rect, fire_rect)){
                 fire->health -= 1.0f;
+                fire->last_hit_with_water = SDL_GetTicks();
+
                 if (fire->health <= 0) {
                     // TODO: get rid of this active logic.
                     // Just have it be a function that looks at the health.
@@ -198,23 +213,27 @@ void check_water_fire_collisions(GameState *state) {
 }
 
 // SLOW: there's a better way to do this but worry about that later.
+// TODO: make this feel better since right now they regenerate immediately.
 void update_fires(GameState *state, float dt){
     // Check all the neighbors of an inactive fire, and if they are alive,
     // then begin lighting the fire.
     for(int i=0; i<state->fire_count; i++){
         Fire *fire = &state->fires_buf[i];
-        if(fire->health >= fire->max_health){
+        if(fire->health > fire->max_health){
             fire->health = fire->max_health;
             continue;
         }
 
         for(int j=0; j<fire->neighbors_size; j++){
             Fire *neighbor = fire->neighbors[j];
-            float seconds = (SDL_GetTicks() - fire->last_put_out) / 1000;
+            float seconds_since_put_out = (SDL_GetTicks() - fire->last_put_out) / 1000;
+            float seconds_since_hit = (SDL_GetTicks() - fire->last_hit_with_water) / 1000;
 
-            if(is_fire_alive(neighbor) && seconds > 0.5){
+            bool can_be_hit = seconds_since_put_out > 0.5 && seconds_since_hit > 0.5;
+            // if(is_fire_alive(neighbor) && seconds > 0.5){
+            if(is_fire_alive(neighbor) && can_be_hit){
             // TODO: update this to be dynamic based on how active
-            // the neighbor fire is.
+            // the neighbor fire is. (is this already done elsewhere)
                 fire->health += 0.1;
             }
         }
@@ -340,5 +359,63 @@ int gamestate_get_fire_count(GameState *state) {
 
 Fire* gamestate_get_fires_buffer(GameState *state) {
     return state->fires_buf;
+}
+
+// ============================================================================
+// GameState Block Management API
+// ============================================================================
+
+Block* gamestate_add_block(GameState *state, float x, float y, float w, float h) {
+    // Check if we've reached max blocks
+    if (state->block_count >= MAX_BLOCK_AMOUNT) {
+        SDL_Log("ERROR: Cannot add block - max blocks (%d) reached", MAX_BLOCK_AMOUNT);
+        return NULL;
+    }
+
+    // Allocate block from pool
+    Block *block = pool_alloc(&state->blocks_pool);
+    if (block == NULL) {
+        SDL_Log("ERROR: Cannot add block - pool allocation failed");
+        return NULL;
+    }
+
+    // Initialize the block
+    init_block(block, x, y, w, h);
+    state->block_count++;
+
+    return block;
+}
+
+void gamestate_remove_block(GameState *state, Block *block) {
+    if (block == NULL) {
+        return;
+    }
+
+    // Free the block from the pool
+    pool_free(&state->blocks_pool, block);
+    state->block_count--;
+}
+
+Block* gamestate_find_block_at_position(GameState *state, float world_x, float world_y) {
+    for (int i = 0; i < state->block_count; i++) {
+        Block *block = &state->blocks_buf[i];
+
+        SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
+
+        // Check if point is inside block rectangle
+        if (world_x >= block_rect.x && world_x <= block_rect.x + block_rect.w &&
+            world_y >= block_rect.y && world_y <= block_rect.y + block_rect.h) {
+            return block;
+        }
+    }
+    return NULL;
+}
+
+int gamestate_get_block_count(GameState *state) {
+    return state->block_count;
+}
+
+Block* gamestate_get_blocks_buffer(GameState *state) {
+    return state->blocks_buf;
 }
 

@@ -10,20 +10,20 @@ void render_gamestate(EditorState *editor, GameState *state){
     SDL_RenderClear(renderer);
 
     for (int i = 0; i < state->block_count; i++) {
-        render_block(renderer, block_sprite, state->blocks[i], state->camera);
+        render_block(renderer, block_sprite, state->blocks_buf[i], state->camera);
     }
     render_player(renderer, player_texture, &state->player, state->camera);
 
-    SDL_FRect srcrect = {288, 32, 200, 180};
-    SDL_FRect destrect = {250, 75, 150, 150};
-    SDL_RenderTexture(
-        renderer,
-        bush_sprite_sheet,
-        &srcrect,
-        &destrect
-    );
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderRect(renderer, &destrect);
+    // SDL_FRect srcrect = {288, 32, 200, 180};
+    // SDL_FRect destrect = {250, 75, 150, 150};
+    // SDL_RenderTexture(
+    //     renderer,
+    //     bush_sprite_sheet,
+    //     &srcrect,
+    //     &destrect
+    // );
+    // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    // SDL_RenderRect(renderer, &destrect);
 
     render_fires(renderer, state);
     render_water_particles(renderer, state);
@@ -108,75 +108,136 @@ void render_fires(SDL_Renderer *renderer, GameState *state) {
 }
 
 void render_editor_ui(SDL_Renderer *renderer, EditorState *editor, GameState *state) {
-    // Draw mode indicator (simple colored rectangle for now)
+    // Mode indicator showing current editor mode
     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 100);
-    SDL_FRect mode_indicator = {10, 10, 300, 20};
+    SDL_FRect mode_indicator = {(720/2), 5, 150, 20};
     SDL_RenderFillRect(renderer, &mode_indicator);
+    // TODO: Add text rendering to show "FIRE EDITOR" or "BLOCK EDITOR"
 
-    // Draw instruction text using debug renderer
-    // (We'll use SDL_Log for now since we need to add text rendering)
-
-    // Highlight selected fire with cyan outline
-    Fire *selected_fire = editor_get_selected_fire(editor);
-    if (selected_fire != NULL) {
-        SDL_FRect fire_rect = {
-            selected_fire->x,
-            selected_fire->y,
-            selected_fire->w,
-            selected_fire->h
-        };
-
-        SDL_FPoint newpos = convert_pos_to_camera_pos(
-            state->camera, fire_rect.x, fire_rect.y
-        );
-        fire_rect.x = newpos.x;
-        fire_rect.y = newpos.y;
-
-        // Draw cyan highlight with thicker border
-        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
-        // Draw 3 pixel thick outline
-        for (int i = -2; i <= 2; i++) {
-            SDL_FRect outline = {
-                fire_rect.x + i, fire_rect.y + i,
-                fire_rect.w - 2*i, fire_rect.h - 2*i
-            };
-            SDL_RenderRect(renderer, &outline);
-        }
-    }
-
-    // Highlight fire under cursor with white outline
     float world_x = state->player.cursor_x + state->camera.x;
     float world_y = state->player.cursor_y + state->camera.y;
 
-    Fire *fire_at_cursor = editor_get_fire_at_position(state, world_x, world_y);
+    EditorMode mode = editor_get_mode(editor);
 
-    if (fire_at_cursor != NULL) {
-        SDL_FRect fire_rect = {
-            fire_at_cursor->x,
-            fire_at_cursor->y,
-            fire_at_cursor->w,
-            fire_at_cursor->h
-        };
+    if (mode == EDITOR_MODE_FIRE) {
+        // Fire editor mode rendering
+        Fire *selected_fire = editor_get_selected_fire(editor);
+        if (selected_fire != NULL) {
+            SDL_FRect fire_rect = {
+                selected_fire->x,
+                selected_fire->y,
+                selected_fire->w,
+                selected_fire->h
+            };
 
-        SDL_FPoint newpos = convert_pos_to_camera_pos(
-            state->camera, fire_rect.x, fire_rect.y
-        );
-        fire_rect.x = newpos.x;
-        fire_rect.y = newpos.y;
+            SDL_FPoint newpos = convert_pos_to_camera_pos(
+                state->camera, fire_rect.x, fire_rect.y
+            );
+            fire_rect.x = newpos.x;
+            fire_rect.y = newpos.y;
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderRect(renderer, &fire_rect);
+            // Draw cyan highlight with thicker border
+            SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+            for (int i = -2; i <= 2; i++) {
+                SDL_FRect outline = {
+                    fire_rect.x + i, fire_rect.y + i,
+                    fire_rect.w - 2*i, fire_rect.h - 2*i
+                };
+                SDL_RenderRect(renderer, &outline);
+            }
+        }
+
+        // Highlight fire under cursor with white outline
+        Fire *fire_at_cursor = editor_get_fire_at_position(state, world_x, world_y);
+
+        if (fire_at_cursor != NULL) {
+            SDL_FRect fire_rect = {
+                fire_at_cursor->x,
+                fire_at_cursor->y,
+                fire_at_cursor->w,
+                fire_at_cursor->h
+            };
+
+            SDL_FPoint newpos = convert_pos_to_camera_pos(
+                state->camera, fire_rect.x, fire_rect.y
+            );
+            fire_rect.x = newpos.x;
+            fire_rect.y = newpos.y;
+
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderRect(renderer, &fire_rect);
+        } else {
+            // Draw fire placement preview at cursor
+            SDL_FRect preview_rect = {
+                state->player.cursor_x - 25,
+                state->player.cursor_y - 25,
+                50, 50
+            };
+
+            SDL_SetRenderDrawColor(renderer, 255, 100, 0, 100);
+            SDL_RenderFillRect(renderer, &preview_rect);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150);
+            SDL_RenderRect(renderer, &preview_rect);
+        }
     } else {
-        // Draw placement preview at cursor
-        SDL_FRect preview_rect = {
-            state->player.cursor_x - 25,
-            state->player.cursor_y - 25,
-            50, 50
-        };
+        // Block editor mode rendering
+        Block *selected_block = editor_get_selected_block(editor);
+        if (selected_block != NULL) {
+            SDL_FRect block_rect = {
+                selected_block->x,
+                selected_block->y,
+                selected_block->w,
+                selected_block->h
+            };
 
-        SDL_SetRenderDrawColor(renderer, 255, 100, 0, 100);
-        SDL_RenderFillRect(renderer, &preview_rect);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150);
-        SDL_RenderRect(renderer, &preview_rect);
+            SDL_FPoint newpos = convert_pos_to_camera_pos(
+                state->camera, block_rect.x, block_rect.y
+            );
+            block_rect.x = newpos.x;
+            block_rect.y = newpos.y;
+
+            // Draw cyan highlight with thicker border
+            SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+            for (int i = -2; i <= 2; i++) {
+                SDL_FRect outline = {
+                    block_rect.x + i, block_rect.y + i,
+                    block_rect.w - 2*i, block_rect.h - 2*i
+                };
+                SDL_RenderRect(renderer, &outline);
+            }
+        }
+
+        // Highlight block under cursor with white outline
+        Block *block_at_cursor = editor_get_block_at_position(state, world_x, world_y);
+
+        if (block_at_cursor != NULL) {
+            SDL_FRect block_rect = {
+                block_at_cursor->x,
+                block_at_cursor->y,
+                block_at_cursor->w,
+                block_at_cursor->h
+            };
+
+            SDL_FPoint newpos = convert_pos_to_camera_pos(
+                state->camera, block_rect.x, block_rect.y
+            );
+            block_rect.x = newpos.x;
+            block_rect.y = newpos.y;
+
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderRect(renderer, &block_rect);
+        } else {
+            // Draw block placement preview at cursor (250x250 default size)
+            SDL_FRect preview_rect = {
+                state->player.cursor_x - 125,
+                state->player.cursor_y - 125,
+                250, 250
+            };
+
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 100);
+            SDL_RenderFillRect(renderer, &preview_rect);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150);
+            SDL_RenderRect(renderer, &preview_rect);
+        }
     }
 }

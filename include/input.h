@@ -37,6 +37,8 @@ typedef enum InputType {
     INPUT_MOUSE_RIGHT_CLICK,
     INPUT_EDITOR_SAVE,
     INPUT_EDITOR_LOAD,
+    INPUT_EDITOR_MODE_FIRE,   // Press 1 key
+    INPUT_EDITOR_MODE_BLOCK,  // Press 2 key
 
     // Camera movement (editor mode)
     INPUT_CAMERA_LEFT,

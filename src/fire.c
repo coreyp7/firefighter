@@ -11,6 +11,7 @@ void init_fire(Fire *fire, float x, float y, float w, float h, float health) {
     fire->neighbors_size = 0;
     fire->active = true;
     fire->last_put_out = 0;
+    fire->last_hit_with_water = 0;
 }
 
 // TODO: this function is okay, but logic should be entirely based off health.

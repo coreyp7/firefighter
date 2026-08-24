@@ -4,7 +4,7 @@
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 
-#define MAX_FIRES 20
+#define MAX_FIRES 100
 #define MAX_NEIGHBORS 8
 
 typedef struct Fire {
@@ -18,6 +18,7 @@ typedef struct Fire {
     int neighbors_size;
     bool active; // in pool context, is this a valid fire?
     int last_put_out;
+    int last_hit_with_water;
 } Fire;
 
 void init_fire(Fire *fire, float x, float y, float w, float h, float health);
