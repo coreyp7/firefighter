@@ -121,8 +121,14 @@ void update_player(GameState *state, float dt) {
         float dx = player->cursor_x - player_pos_relative.x;
         float dy = player->cursor_y - player_pos_relative.y;
 
-        float noise = (rand() % 5);
+        //float noise = (rand() % 5);
+        // TODO: can we make this noise generation better? I want random decimal values
+        // between 0-2.
+        float noise = (rand() % 3);
         noise = noise / 10.f;
+        if((rand() % 2) == 0){
+            noise *= -1;
+        }
         float angle = atan2f(dx, dy) + noise;
         //float angle = atan2f(dx, dy);
         SDL_Log("angle: %f\n", angle);
