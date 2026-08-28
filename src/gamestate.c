@@ -76,8 +76,9 @@ void update_player(GameState *state, float dt) {
     // Check horizontal collisions
     player->x += player->xvel * dt;
     player_rect.x = player->x;
-    for (int i = 0; i < state->block_count; i++) {
+    for (int i = 0; i < MAX_BLOCK_AMOUNT; i++) {
         Block *block = &state->blocks_buf[i];
+        if (!block->active) continue;
         SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
         if(is_colliding(player_rect, block_rect)){
             player->x = oldx;
@@ -91,8 +92,9 @@ void update_player(GameState *state, float dt) {
     player->y += player->yvel * dt;
     player_rect.y = player->y;
     bool collided_vertically = false;
-    for (int i = 0; i < state->block_count; i++) {
+    for (int i = 0; i < MAX_BLOCK_AMOUNT; i++) {
         Block *block = &state->blocks_buf[i];
+        if (!block->active) continue;
         SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
         if(is_colliding(player_rect, block_rect)){
             player->is_grounded = true;
@@ -388,14 +390,16 @@ void gamestate_remove_block(GameState *state, Block *block) {
         return;
     }
 
-    // Free the block from the pool
+    block->active = false;
     pool_free(&state->blocks_pool, block);
     state->block_count--;
 }
 
 Block* gamestate_find_block_at_position(GameState *state, float world_x, float world_y) {
-    for (int i = 0; i < state->block_count; i++) {
+    for (int i = 0; i < MAX_BLOCK_AMOUNT; i++) {
         Block *block = &state->blocks_buf[i];
+
+        if (!block->active) continue;
 
         SDL_FRect block_rect = {block->x, block->y, block->w, block->h};
 

@@ -5,4 +5,5 @@ void init_block(Block *block, float x, float y, float w, float h) {
     block->y = y;
     block->w = w;
     block->h = h;
+    block->active = true;
 }

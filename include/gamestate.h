@@ -45,6 +45,8 @@ typedef struct GameState {
     Block blocks_buf[MAX_BLOCK_AMOUNT];
     Pool blocks_pool;
     int block_count;
+    // TODO: look into colony/hive architecture for iterating through these
+    // correctly if performance problems arise.
     Fire fires_buf[MAX_FIRES];
     Pool fires_pool;
     int fire_count;

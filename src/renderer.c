@@ -6,11 +6,14 @@
 
 void render_gamestate(EditorState *editor, GameState *state){
     // Render
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    //SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
-    for (int i = 0; i < state->block_count; i++) {
-        render_block(renderer, block_sprite, state->blocks_buf[i], state->camera);
+    for (int i = 0; i < MAX_BLOCK_AMOUNT; i++) {
+        Block *block = &state->blocks_buf[i];
+        if (!block->active) continue;
+        render_block(renderer, block_sprite, *block, state->camera);
     }
     render_player(renderer, player_texture, &state->player, state->camera);
 
