@@ -221,8 +221,10 @@ static Fire* get_fire_at_screen_position(GameState *state, float mouse_x, float 
     float world_x = mouse_x + state->camera.x;
     float world_y = mouse_y + state->camera.y;
 
-    for (int i = 0; i < state->fire_count; i++) {
+    //for (int i = 0; i < state->fire_count; i++) {
+    for (int i = 0; i < MAX_FIRES; i++) {
         Fire *fire = &state->fires_buf[i];
+        if(!fire->active) continue;
         SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
 
         if (world_x >= fire_rect.x && world_x <= fire_rect.x + fire_rect.w &&
@@ -281,8 +283,10 @@ void debug_render_fire_neighbors(SDL_Renderer *renderer, GameState *state) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
 
     // Iterate through all fires
-    for (int i = 0; i < state->fire_count; i++) {
+    //for (int i = 0; i < state->fire_count; i++) {
+    for (int i = 0; i < MAX_FIRES; i++) {
         Fire *fire = &state->fires_buf[i];
+        if(!fire->active) continue;
 
         // Calculate fire center in world space
         float fire_center_x = fire->x + fire->w / 2.0f;

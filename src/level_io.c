@@ -79,7 +79,9 @@ bool level_load_fire_layout(GameState *game, const char *filename) {
     int current_fire_count = gamestate_get_fire_count(game);
 
     // Remove all existing fires
-    for (int i = current_fire_count - 1; i >= 0; i--) {
+    //for (int i = current_fire_count - 1; i >= 0; i--) {
+    for (int i = MAX_FIRES - 1; i >= 0; i--) {
+        if(!fires_buf[i].active) continue;
         gamestate_remove_fire(game, &fires_buf[i]);
     }
 

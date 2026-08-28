@@ -6,8 +6,8 @@
 
 void render_gamestate(EditorState *editor, GameState *state){
     // Render
-    //SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    //SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
     for (int i = 0; i < MAX_BLOCK_AMOUNT; i++) {
@@ -98,7 +98,8 @@ void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera) {
 }
 
 void render_fires(SDL_Renderer *renderer, GameState *state) {
-    for (int i = 0; i < state->fire_count; i++) {
+    //for (int i = 0; i < state->fire_count; i++) {
+    for (int i = 0; i < MAX_FIRES; i++) {
         if(!state->fires_buf[i].active) {
             continue;
         }

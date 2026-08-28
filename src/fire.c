@@ -7,7 +7,10 @@ void init_fire(Fire *fire, float x, float y, float w, float h, float health) {
     fire->h = h;
     fire->health = health;
     fire->max_health = health;
-    memset(fire->neighbors, 0, sizeof(fire->neighbors));
+    //memset(fire->neighbors, 0, sizeof(fire)*MAX_NEIGHBORS);
+    // for(int i=0; i<fire->neighbors_size; i++){
+    //     fire->neighbors[i].active = false;
+    // }
     fire->neighbors_size = 0;
     fire->active = true;
     fire->last_put_out = 0;

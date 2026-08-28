@@ -39,22 +39,30 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     gamestate_add_block(state, 1000, 500, 250, 250);
 
     // Initialize fires pool
+    SDL_Log("Before pool init\n");
+    memset(&state->fires_buf, 0, MAX_FIRES*sizeof(Fire));
     pool_init(
         &state->fires_pool,
         &state->fires_buf,
         MAX_FIRES * sizeof(Fire),
         sizeof(Fire)
     );
+    SDL_Log("after pool init\n");
     state->fire_count = 0;
 
     state->camera = (Camera){0, 0, window_width, window_height};
 }
 
 void simulate_gamestate(GameState *state, float dt) {
+    SDL_Log("cowabunga 1\n");
     update_player(state, dt);
+    SDL_Log("cowabunga 2\n");
     simulate_water_particles(state, dt);
+    SDL_Log("cowabunga 3\n");
     check_water_fire_collisions(state);
+    SDL_Log("cowabunga 4\n");
     update_fires(state, dt);
+    SDL_Log("cowabunga 5\n");
 }
 
 void cleanup_gamestate(GameState *state) {
@@ -176,8 +184,10 @@ void check_water_fire_collisions(GameState *state) {
 
         SDL_FRect water_rect = {particle->x, particle->y, 15.0f, 15.0f};
 
-        for (int j = 0; j < state->fire_count; j++) {
+        //for (int j = 0; j < state->fire_count; j++) {
+        for (int j = 0; j < MAX_FIRES; j++) {
             Fire *fire = &state->fires_buf[j];
+            if(!fire->active) continue;
 
             //if (!is_fire_alive(fire)) {
             if(fire->health == 0){
@@ -213,17 +223,30 @@ void check_water_fire_collisions(GameState *state) {
 
 // SLOW: there's a better way to do this but worry about that later.
 // TODO: make this feel better since right now they regenerate immediately.
+// TODO: Rename this to 'regrowFires' or something
 void update_fires(GameState *state, float dt){
     // Check all the neighbors of an inactive fire, and if they are alive,
     // then begin lighting the fire.
-    for(int i=0; i<state->fire_count; i++){
+    //for(int i=0; i<state->fire_count; i++){
+    for (int i = 0; i < MAX_FIRES; i++) {
+        SDL_Log("loop %i\n", i);
         Fire *fire = &state->fires_buf[i];
+        if(!fire->active) continue;
+
+        SDL_Log("loop %i #1\n", i);
         if(fire->health > fire->max_health){
             fire->health = fire->max_health;
             continue;
         }
 
+        if(fire->neighbors_size == 0){
+            SDL_Log("fire neighbor size: %i", fire->neighbors_size);
+            continue;
+        }
+
+        SDL_Log("fire neighbor size: %i", fire->neighbors_size);
         for(int j=0; j<fire->neighbors_size; j++){
+            SDL_Log("loop %i %i\n", i, j);
             Fire *neighbor = fire->neighbors[j];
             float seconds_since_put_out = (SDL_GetTicks() - fire->last_put_out) / 1000;
             float seconds_since_hit = (SDL_GetTicks() - fire->last_hit_with_water) / 1000;
@@ -268,8 +291,11 @@ void gamestate_remove_fire(GameState *state, Fire *fire) {
 
     // Remove this fire's references from all other fires' neighbor lists
     // BAD: fine for now but pretty lazy.
-    for (int i = 0; i < state->fire_count; i++) {
+
+    //for (int i = 0; i < state->fire_count; i++) {
+    for (int i = 0; i < MAX_FIRES; i++) {
         Fire *other_fire = &state->fires_buf[i];
+        if(!other_fire->active) continue;
 
         // Skip if this is the fire being deleted
         if (other_fire == fire) {
@@ -290,13 +316,16 @@ void gamestate_remove_fire(GameState *state, Fire *fire) {
     }
 
     // Free the fire from the pool
+    fire->active = false;
     pool_free(&state->fires_pool, fire);
     state->fire_count--;
 }
 
 Fire* gamestate_find_fire_at_position(GameState *state, float world_x, float world_y) {
-    for (int i = 0; i < state->fire_count; i++) {
+    //for (int i = 0; i < state->fire_count; i++) {
+    for (int i = 0; i < MAX_FIRES; i++) {
         Fire *fire = &state->fires_buf[i];
+        if(!fire->active) continue;
 
         SDL_FRect fire_rect = {fire->x, fire->y, fire->w, fire->h};
 
