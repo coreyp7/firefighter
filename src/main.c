@@ -12,6 +12,7 @@
 #include "renderer.h"
 #include "input.h"
 #include "pool.h"
+#include "random_utils.h"
 
 typedef uint32_t uint32;
 
@@ -27,6 +28,7 @@ int main(int argc, char *argv[]) {
     (void)argv;
 
     initSDL();
+    random_init();
 
     SDL_Window *window = SDL_CreateWindow("ff", WINDOW_WIDTH, WINDOW_HEIGHT, 0);
     if (!window) {

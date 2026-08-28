@@ -76,3 +76,25 @@ allow the player to walk on it, powerup?
 8/24/2026 @2:53pm:
 - Make it so fires don't start generating immediately
     - right now it doesn't feel good to put fires out
+
+
+
+
+8/25/2026:
+- create level on paper
+- add serialization of blocks
+- improve controls of player
+
+8/27/2026:
+How do I want this to be end state, generally?
+- Enough graphics to see what's going on
+    - basic fire animation, background for trees, buildings, etc.
+    - as quick and dry as possible
+- have some kind of level design worth doing this project for
+    - LESSON: draft design ideas concrete before doing anything
+    - a level or two (three max) that have any interesting/different ideas to them
+
+I prolly won't touch this until I'm back from Greece.
+This shouldn't go passed October. After that move on.
+
+

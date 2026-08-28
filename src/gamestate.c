@@ -1,4 +1,6 @@
 #include "gamestate.h"
+#include "random_utils.h"
+#include "math_utils.h"
 #include "water_particles.h"
 #include "camera.h"
 #include "fire.h"
@@ -121,28 +123,17 @@ void update_player(GameState *state, float dt) {
         float dx = player->cursor_x - player_pos_relative.x;
         float dy = player->cursor_y - player_pos_relative.y;
 
-        //float noise = (rand() % 5);
-        // TODO: can we make this noise generation better? I want random decimal values
-        // between 0-2.
-        float noise = (rand() % 3);
-        noise = noise / 10.f;
-        if((rand() % 2) == 0){
-            noise *= -1;
-        }
+        //float noise = random_float_range(-0.5f, 0.5f);
+        float noise = random_float_range(-0.25f, 0.25f);
         float angle = atan2f(dx, dy) + noise;
         //float angle = atan2f(dx, dy);
         SDL_Log("angle: %f\n", angle);
         SDL_Log("noise: %f\n", noise);
         shoot_water_particle(state, player->x, player->y, angle);
 
-        // TODO: move normalize code into function in appropriate module.
-        float xsq = dx * dx;
-        float ysq = dy * dy;
-        float sum = xsq + ysq;
-        float magnitude = sqrt(sum);
-
-        float x_normal = dx / magnitude;
-        float y_normal = dy / magnitude;
+        float x_normal = dx;
+        float y_normal = dy;
+        vec2_normalize(&x_normal, &y_normal);
 
         // TODO: put these into constants
         if(y_normal > 0){
