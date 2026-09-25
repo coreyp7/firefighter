@@ -9,6 +9,7 @@
 
 #define MAX_WATER_PARTICLES 500
 #define MAX_BLOCK_AMOUNT 30
+#define MAX_LEVELS 10
 
 #define PLAYER_GRAVITY 700
 
@@ -38,19 +39,27 @@ typedef struct WaterParticle {
     SDL_FColor color;
 } WaterParticle;
 
+typedef struct Level {
+    Block blocks_buf[MAX_BLOCK_AMOUNT];
+    Fire fires_buf[MAX_FIRES];
+} Level;
+
 typedef struct GameState {
     Player player;
     WaterParticle particles[MAX_WATER_PARTICLES];
     int particle_count;
-    Block blocks_buf[MAX_BLOCK_AMOUNT];
+    Block *blocks_buf;
     Pool blocks_pool;
     int block_count;
-    // TODO: look into colony/hive architecture for iterating through these
-    // correctly if performance problems arise.
-    Fire fires_buf[MAX_FIRES];
+    Fire *fires_buf;
     Pool fires_pool;
+    // Only used for ensuring we don't go over the max count of fires.
+    // Otherwise, we just loop through our buffers entirely and check
+    // that they're active.
     int fire_count;
     Camera camera;
+    Level levels[MAX_LEVELS];
+    int current_level_index;
 } GameState;
 
 void init_gamestate(GameState *state, int window_width, int window_height);

@@ -22,10 +22,34 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
 
     state->particle_count = 0;
 
+    // Initialize all levels
+    for (int i = 0; i < MAX_LEVELS; i++) {
+        memset(&state->levels[i].blocks_buf, 0, MAX_BLOCK_AMOUNT * sizeof(Block));
+        memset(&state->levels[i].fires_buf, 0, MAX_FIRES * sizeof(Fire));
+    }
+
+    // Set current level to first level
+    state->current_level_index = 0;
+    state->blocks_buf = state->levels[0].blocks_buf;
+    state->fires_buf = state->levels[0].fires_buf;
+
     // Initialize blocks pool
+    // TODO: we're gonna likely have to update this since now we can change levels.
+    // So, whenever a level is changed, we clear the pool and populate it with the
+    // new level being loaded.
+    /**
+    flow: level is switching from 1 -> 2
+    1. Clear pools of each.
+    2. update our pointers to the fire/block buffers to be the new level
+    3. update players position to the start position (should be included in level
+    struct, and therefore in level files)
+
+    Additionally, maybe we should include pools in level instantiation for convenience,
+    although this is all extra for level editing.
+    */
     pool_init(
         &state->blocks_pool,
-        &state->blocks_buf,
+        state->blocks_buf,
         MAX_BLOCK_AMOUNT * sizeof(Block),
         sizeof(Block)
     );
@@ -40,10 +64,9 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
 
     // Initialize fires pool
     SDL_Log("Before pool init\n");
-    memset(&state->fires_buf, 0, MAX_FIRES*sizeof(Fire));
     pool_init(
         &state->fires_pool,
-        &state->fires_buf,
+        state->fires_buf,
         MAX_FIRES * sizeof(Fire),
         sizeof(Fire)
     );
