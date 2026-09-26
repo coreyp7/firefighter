@@ -37,10 +37,13 @@ typedef enum InputType {
     INPUT_MOUSE_RIGHT_CLICK,
     INPUT_EDITOR_SAVE,
     INPUT_EDITOR_LOAD,
+    INPUT_EDITOR_SAVE_ALL,
+    INPUT_EDITOR_LOAD_ALL,
     INPUT_EDITOR_MODE_FIRE,   // Press 1 key
     INPUT_EDITOR_MODE_BLOCK,  // Press 2 key
 
-    // Level switching (temporary keybindings for testing)
+    // Level switching (during testing only)
+    // TODO: make this only available in edit mode
     INPUT_LEVEL_PREV,  // Press [ key
     INPUT_LEVEL_NEXT,  // Press ] key
 

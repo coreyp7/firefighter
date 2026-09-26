@@ -71,15 +71,10 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
 }
 
 void simulate_gamestate(GameState *state, float dt) {
-    SDL_Log("cowabunga 1\n");
     update_player(state, dt);
-    SDL_Log("cowabunga 2\n");
     simulate_water_particles(state, dt);
-    SDL_Log("cowabunga 3\n");
     check_water_fire_collisions(state);
-    SDL_Log("cowabunga 4\n");
     update_fires(state, dt);
-    SDL_Log("cowabunga 5\n");
 }
 
 void cleanup_gamestate(GameState *state) {
@@ -154,8 +149,6 @@ void update_player(GameState *state, float dt) {
         float noise = random_float_range(-0.25f, 0.25f);
         float angle = atan2f(dx, dy) + noise;
         //float angle = atan2f(dx, dy);
-        SDL_Log("angle: %f\n", angle);
-        SDL_Log("noise: %f\n", noise);
         shoot_water_particle(state, player->x, player->y, angle);
 
         float x_normal = dx;
@@ -246,24 +239,19 @@ void update_fires(GameState *state, float dt){
     // then begin lighting the fire.
     //for(int i=0; i<state->fire_count; i++){
     for (int i = 0; i < MAX_FIRES; i++) {
-        SDL_Log("loop %i\n", i);
         Fire *fire = &state->fires_buf[i];
         if(!fire->active) continue;
 
-        SDL_Log("loop %i #1\n", i);
         if(fire->health > fire->max_health){
             fire->health = fire->max_health;
             continue;
         }
 
         if(fire->neighbors_size == 0){
-            SDL_Log("fire neighbor size: %i", fire->neighbors_size);
             continue;
         }
 
-        SDL_Log("fire neighbor size: %i", fire->neighbors_size);
         for(int j=0; j<fire->neighbors_size; j++){
-            SDL_Log("loop %i %i\n", i, j);
             Fire *neighbor = fire->neighbors[j];
             float seconds_since_put_out = (SDL_GetTicks() - fire->last_put_out) / 1000;
             float seconds_since_hit = (SDL_GetTicks() - fire->last_hit_with_water) / 1000;

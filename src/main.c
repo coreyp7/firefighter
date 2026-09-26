@@ -13,6 +13,7 @@
 #include "input.h"
 #include "pool.h"
 #include "random_utils.h"
+#include "level_io.h"
 
 typedef uint32_t uint32;
 
@@ -76,21 +77,19 @@ int main(int argc, char *argv[]) {
     SDL_ShowWindow(window);
     init_water_particles();
     init_debug(renderer);
-    SDL_Log("hit main gameloop\n");
+
+    level_load_all_levels(&state, "fire_layouts/levelpack.txt");
 
     while(isRunning){
-        SDL_Log("Loop at %i\n", SDL_GetTicks());
         uint32 start_ticks = SDL_GetTicks();
 
         gather_input(&input_buffer, &isRunning);
 
         processInput(&editor, &state, &input_buffer, dt);
 
-        SDL_Log("before gamestate\n");
         dt = (SDL_GetTicks() - last_state_update) / 1000.f;
         last_state_update = SDL_GetTicks();
         simulate_gamestate(&state, dt);
-        SDL_Log("after gamestate\n");
 
         // Update camera to follow player in play mode
         // TODO: make this lerp instead of instant movement.
@@ -99,9 +98,7 @@ int main(int argc, char *argv[]) {
             state.camera.y = state.player.y - (state.camera.h / 2);
         }
 
-        SDL_Log("before render\n");
         render_gamestate(&editor, &state);
-        SDL_Log("after render\n");
 
         // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;

@@ -30,6 +30,8 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
                 buffer->event_count++;
                 break;
 
+            // REFACTOR: this sucks, change when you need to.
+            // Make a switch or something.
             case SDL_EVENT_KEY_DOWN:
                 if (event.key.key == SDLK_F1 || event.key.key == SDLK_0) {
                     input_event->type = INPUT_TOGGLE_MODE;
@@ -180,11 +182,13 @@ void processEditorInput(EditorState *editor, GameState *state, InputBuffer *inpu
                 break;
 
             case INPUT_EDITOR_SAVE:
-                level_save_fire_layout(state, "fire_layouts/default.txt");
+                //level_save_fire_layout(state, "fire_layouts/default.txt");
+                level_save_all_levels(state, "fire_layouts/levelpack.txt");
                 break;
 
             case INPUT_EDITOR_LOAD:
-                level_load_fire_layout(state, "fire_layouts/default.txt");
+                //level_load_fire_layout(state, "fire_layouts/default.txt");
+                level_load_all_levels(state, "fire_layouts/levelpack.txt");
                 break;
 
             case INPUT_EDITOR_MODE_FIRE:
@@ -193,6 +197,18 @@ void processEditorInput(EditorState *editor, GameState *state, InputBuffer *inpu
 
             case INPUT_EDITOR_MODE_BLOCK:
                 editor_set_mode_block(editor);
+                break;
+
+            case INPUT_LEVEL_PREV:
+                if (state->current_level_index > 0) {
+                    gamestate_switch_level(state, state->current_level_index - 1);
+                }
+                break;
+
+            case INPUT_LEVEL_NEXT:
+                if (state->current_level_index < MAX_LEVELS - 1) {
+                    gamestate_switch_level(state, state->current_level_index + 1);
+                }
                 break;
 
             default:
@@ -217,18 +233,6 @@ void processInput(EditorState *editor, GameState *state, InputBuffer *input, flo
                     editor_deactivate(editor, state);
                 } else {
                     editor_activate(editor, state);
-                }
-                break;
-
-            case INPUT_LEVEL_PREV:
-                if (state->current_level_index > 0) {
-                    gamestate_switch_level(state, state->current_level_index - 1);
-                }
-                break;
-
-            case INPUT_LEVEL_NEXT:
-                if (state->current_level_index < MAX_LEVELS - 1) {
-                    gamestate_switch_level(state, state->current_level_index + 1);
                 }
                 break;
 
