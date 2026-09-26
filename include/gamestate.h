@@ -42,6 +42,10 @@ typedef struct WaterParticle {
 typedef struct Level {
     Block blocks_buf[MAX_BLOCK_AMOUNT];
     Fire fires_buf[MAX_FIRES];
+    Pool blocks_pool;
+    Pool fires_pool;
+    float player_spawn_x;
+    float player_spawn_y;
 } Level;
 
 typedef struct GameState {
@@ -49,10 +53,10 @@ typedef struct GameState {
     WaterParticle particles[MAX_WATER_PARTICLES];
     int particle_count;
     Block *blocks_buf;
-    Pool blocks_pool;
+    Pool *blocks_pool_ptr;
     int block_count;
     Fire *fires_buf;
-    Pool fires_pool;
+    Pool *fires_pool_ptr;
     // Only used for ensuring we don't go over the max count of fires.
     // Otherwise, we just loop through our buffers entirely and check
     // that they're active.
@@ -87,6 +91,9 @@ void gamestate_remove_block(GameState *state, Block *block);
 Block* gamestate_find_block_at_position(GameState *state, float world_x, float world_y);
 int gamestate_get_block_count(GameState *state);
 Block* gamestate_get_blocks_buffer(GameState *state);
+
+// Level switching
+void gamestate_switch_level(GameState *state, int new_level_index);
 
 
 #endif

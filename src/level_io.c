@@ -30,6 +30,11 @@ bool level_save_fire_layout(GameState *game, const char *filename) {
     // Write header
     fprintf(fp, "FIRE_COUNT %d\n", fire_count);
 
+    // Write player spawn position
+    fprintf(fp, "PLAYER_SPAWN %f %f\n",
+            game->levels[game->current_level_index].player_spawn_x,
+            game->levels[game->current_level_index].player_spawn_y);
+
     // Write each fire
     for (int i = 0; i < fire_count; i++) {
         Fire *fire = &fires_buf[i];
@@ -64,6 +69,19 @@ bool level_load_fire_layout(GameState *game, const char *filename) {
         SDL_Log("ERROR: Failed to read fire count from file");
         fclose(fp);
         return false;
+    }
+
+    // Read player spawn position (with backward compatibility)
+    float spawn_x, spawn_y;
+    if (fscanf(fp, "PLAYER_SPAWN %f %f\n", &spawn_x, &spawn_y) == 2) {
+        game->levels[game->current_level_index].player_spawn_x = spawn_x;
+        game->levels[game->current_level_index].player_spawn_y = spawn_y;
+        SDL_Log("Loaded spawn position: (%f, %f)", spawn_x, spawn_y);
+    } else {
+        // Backward compatibility: use default if not in file
+        SDL_Log("WARNING: No spawn position in file, using default");
+        game->levels[game->current_level_index].player_spawn_x = 50.0f;
+        game->levels[game->current_level_index].player_spawn_y = 400.0f;
     }
 
     if (fire_count > MAX_FIRES) {

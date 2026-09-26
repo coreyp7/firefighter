@@ -61,6 +61,12 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
                 } else if (event.key.key == SDLK_2) {
                     input_event->type = INPUT_EDITOR_MODE_BLOCK;
                     buffer->event_count++;
+                } else if (event.key.key == SDLK_LEFTBRACKET) {
+                    input_event->type = INPUT_LEVEL_PREV;
+                    buffer->event_count++;
+                } else if (event.key.key == SDLK_RIGHTBRACKET) {
+                    input_event->type = INPUT_LEVEL_NEXT;
+                    buffer->event_count++;
                 }
                 break;
 
@@ -211,6 +217,18 @@ void processInput(EditorState *editor, GameState *state, InputBuffer *input, flo
                     editor_deactivate(editor, state);
                 } else {
                     editor_activate(editor, state);
+                }
+                break;
+
+            case INPUT_LEVEL_PREV:
+                if (state->current_level_index > 0) {
+                    gamestate_switch_level(state, state->current_level_index - 1);
+                }
+                break;
+
+            case INPUT_LEVEL_NEXT:
+                if (state->current_level_index < MAX_LEVELS - 1) {
+                    gamestate_switch_level(state, state->current_level_index + 1);
                 }
                 break;
 

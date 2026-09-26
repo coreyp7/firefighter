@@ -128,13 +128,15 @@ void debug_render(SDL_Renderer *renderer, GameState *state, float frame_time_ms)
     char player_text[64];
     char fire_text[64];
     char pool_text[64];
+    char level_text[64];
 
     snprintf(frame_text, sizeof(frame_text), "Frame: %.2f ms", frame_time_ms);
     snprintf(particle_text, sizeof(particle_text), "Water: %d", active_particles);
     snprintf(player_text, sizeof(player_text), "Player: (%.1f, %.1f)", player_x, player_y);
     snprintf(fire_text, sizeof(fire_text), "Fires: %d/%d", state->fire_count, MAX_FIRES);
+    snprintf(level_text, sizeof(level_text), "Level: %d", state->current_level_index);
 
-    int free_blocks = count_free_pool_blocks(&state->fires_pool);
+    int free_blocks = count_free_pool_blocks(state->fires_pool_ptr);
     snprintf(pool_text, sizeof(pool_text), "Pool Free: %d", free_blocks);
 
     // Calculate max width
@@ -152,6 +154,9 @@ void debug_render(SDL_Renderer *renderer, GameState *state, float frame_time_ms)
     if (width > max_width) max_width = width;
 
     width = get_text_width(fire_text);
+    if (width > max_width) max_width = width;
+
+    width = get_text_width(level_text);
     if (width > max_width) max_width = width;
 
     width = get_text_width(pool_text);
@@ -177,7 +182,10 @@ void debug_render(SDL_Renderer *renderer, GameState *state, float frame_time_ms)
     render_fire_count_text(renderer, state->fire_count, MAX_FIRES, x_offset, y_offset);
     y_offset += line_height;
 
-    render_pool_capacity_text(renderer, &state->fires_pool, x_offset, y_offset);
+    render_text(renderer, level_text, x_offset, y_offset);
+    y_offset += line_height;
+
+    render_pool_capacity_text(renderer, state->fires_pool_ptr, x_offset, y_offset);
 
     // Render fire neighbor connections
     debug_render_fire_neighbors(renderer, state);

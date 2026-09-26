@@ -22,10 +22,30 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
 
     state->particle_count = 0;
 
-    // Initialize all levels
+    // Initialize all levels with their pools
     for (int i = 0; i < MAX_LEVELS; i++) {
         memset(&state->levels[i].blocks_buf, 0, MAX_BLOCK_AMOUNT * sizeof(Block));
         memset(&state->levels[i].fires_buf, 0, MAX_FIRES * sizeof(Fire));
+
+        // Initialize blocks pool for this level
+        pool_init(
+            &state->levels[i].blocks_pool,
+            state->levels[i].blocks_buf,
+            MAX_BLOCK_AMOUNT * sizeof(Block),
+            sizeof(Block)
+        );
+
+        // Initialize fires pool for this level
+        pool_init(
+            &state->levels[i].fires_pool,
+            state->levels[i].fires_buf,
+            MAX_FIRES * sizeof(Fire),
+            sizeof(Fire)
+        );
+
+        // Set default spawn position for each level
+        state->levels[i].player_spawn_x = 50.0f;
+        state->levels[i].player_spawn_y = 400.0f;
     }
 
     // Set current level to first level
@@ -33,26 +53,9 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->blocks_buf = state->levels[0].blocks_buf;
     state->fires_buf = state->levels[0].fires_buf;
 
-    // Initialize blocks pool
-    // TODO: we're gonna likely have to update this since now we can change levels.
-    // So, whenever a level is changed, we clear the pool and populate it with the
-    // new level being loaded.
-    /**
-    flow: level is switching from 1 -> 2
-    1. Clear pools of each.
-    2. update our pointers to the fire/block buffers to be the new level
-    3. update players position to the start position (should be included in level
-    struct, and therefore in level files)
-
-    Additionally, maybe we should include pools in level instantiation for convenience,
-    although this is all extra for level editing.
-    */
-    pool_init(
-        &state->blocks_pool,
-        state->blocks_buf,
-        MAX_BLOCK_AMOUNT * sizeof(Block),
-        sizeof(Block)
-    );
+    // Point to first level's pools
+    state->blocks_pool_ptr = &state->levels[0].blocks_pool;
+    state->fires_pool_ptr = &state->levels[0].fires_pool;
     state->block_count = 0;
 
     // Add default blocks
@@ -62,15 +65,6 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     gamestate_add_block(state, 750, 500, 250, 250);
     gamestate_add_block(state, 1000, 500, 250, 250);
 
-    // Initialize fires pool
-    SDL_Log("Before pool init\n");
-    pool_init(
-        &state->fires_pool,
-        state->fires_buf,
-        MAX_FIRES * sizeof(Fire),
-        sizeof(Fire)
-    );
-    SDL_Log("after pool init\n");
     state->fire_count = 0;
 
     state->camera = (Camera){0, 0, window_width, window_height};
@@ -295,7 +289,7 @@ Fire* gamestate_add_fire(GameState *state, float x, float y, float w, float h, f
         return NULL;
     }
 
-    Fire *fire = pool_alloc(&state->fires_pool);
+    Fire *fire = pool_alloc(state->fires_pool_ptr);
     if (fire == NULL) {
         SDL_Log("ERROR: Cannot add fire - pool allocation failed");
         return NULL;
@@ -340,7 +334,7 @@ void gamestate_remove_fire(GameState *state, Fire *fire) {
 
     // Free the fire from the pool
     fire->active = false;
-    pool_free(&state->fires_pool, fire);
+    pool_free(state->fires_pool_ptr, fire);
     state->fire_count--;
 }
 
@@ -424,7 +418,7 @@ Block* gamestate_add_block(GameState *state, float x, float y, float w, float h)
     }
 
     // Allocate block from pool
-    Block *block = pool_alloc(&state->blocks_pool);
+    Block *block = pool_alloc(state->blocks_pool_ptr);
     if (block == NULL) {
         SDL_Log("ERROR: Cannot add block - pool allocation failed");
         return NULL;
@@ -443,7 +437,7 @@ void gamestate_remove_block(GameState *state, Block *block) {
     }
 
     block->active = false;
-    pool_free(&state->blocks_pool, block);
+    pool_free(state->blocks_pool_ptr, block);
     state->block_count--;
 }
 
@@ -470,5 +464,72 @@ int gamestate_get_block_count(GameState *state) {
 
 Block* gamestate_get_blocks_buffer(GameState *state) {
     return state->blocks_buf;
+}
+
+void gamestate_switch_level(GameState *state, int new_level_index) {
+    // Validation
+    if (new_level_index < 0 || new_level_index >= MAX_LEVELS) {
+        SDL_Log("ERROR: Invalid level index %d (must be 0-%d)",
+                new_level_index, MAX_LEVELS - 1);
+        return;
+    }
+
+    if (new_level_index == state->current_level_index) {
+        SDL_Log("Already on level %d", new_level_index);
+        return;
+    }
+
+    SDL_Log("Switching from level %d to level %d",
+            state->current_level_index, new_level_index);
+
+    // 1. Clear water particles (global state)
+    state->particle_count = 0;
+    for (int i = 0; i < MAX_WATER_PARTICLES; i++) {
+        state->particles[i].active = false;
+    }
+
+    // 2. Update buffer pointers
+    state->blocks_buf = state->levels[new_level_index].blocks_buf;
+    state->fires_buf = state->levels[new_level_index].fires_buf;
+
+    // 3. Update pool pointers (preserves allocation state)
+    state->blocks_pool_ptr = &state->levels[new_level_index].blocks_pool;
+    state->fires_pool_ptr = &state->levels[new_level_index].fires_pool;
+
+    // 4. Recalculate counts
+    state->block_count = 0;
+    for (int i = 0; i < MAX_BLOCK_AMOUNT; i++) {
+        if (state->blocks_buf[i].active) {
+            state->block_count++;
+        }
+    }
+
+    state->fire_count = 0;
+    for (int i = 0; i < MAX_FIRES; i++) {
+        if (state->fires_buf[i].active) {
+            state->fire_count++;
+        }
+    }
+
+    // 5. Update level index
+    state->current_level_index = new_level_index;
+
+    // 6. Reset player position
+    state->player.x = state->levels[new_level_index].player_spawn_x;
+    state->player.y = state->levels[new_level_index].player_spawn_y;
+
+    // 7. Reset player physics state
+    state->player.xvel = 0.0f;
+    state->player.yvel = 0.0f;
+    state->player.is_grounded = false;
+    state->player.is_shooting_water = false;
+    state->player.is_facing_left = false;
+
+    // 8. Reset camera (center on player)
+    state->camera.x = state->player.x - state->camera.w / 2;
+    state->camera.y = state->player.y - state->camera.h / 2;
+
+    SDL_Log("Successfully switched to level %d", new_level_index);
+    SDL_Log("  Blocks: %d, Fires: %d", state->block_count, state->fire_count);
 }
 

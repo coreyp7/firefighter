@@ -40,6 +40,10 @@ typedef enum InputType {
     INPUT_EDITOR_MODE_FIRE,   // Press 1 key
     INPUT_EDITOR_MODE_BLOCK,  // Press 2 key
 
+    // Level switching (temporary keybindings for testing)
+    INPUT_LEVEL_PREV,  // Press [ key
+    INPUT_LEVEL_NEXT,  // Press ] key
+
     // Camera movement (editor mode)
     INPUT_CAMERA_LEFT,
     INPUT_CAMERA_RIGHT,
