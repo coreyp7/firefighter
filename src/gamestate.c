@@ -496,6 +496,7 @@ void gamestate_switch_level(GameState *state, int new_level_index) {
     for (int i = 0; i < MAX_FIRES; i++) {
         if (state->fires_buf[i].active) {
             state->fire_count++;
+            state->fires_buf[i].health = state->fires_buf[i].max_health;
         }
     }
 
