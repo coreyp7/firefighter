@@ -84,6 +84,7 @@ void cleanup_gamestate(GameState *state) {
 // TODO: maybe split this up into some functions.
 void update_player(GameState *state, float dt) {
     Player *player = &state->player;
+    // TODO: LOL this has been hardcoded this whole time. Fix this.
     SDL_FRect player_rect = {player->x, player->y, 95, 95};
 
     float oldx = player->x;
@@ -138,6 +139,32 @@ void update_player(GameState *state, float dt) {
         player->is_facing_left = false;
     } else {
         player->is_facing_left = true;
+    }
+
+    // Push player up if above fire "wind"
+    // loop through fires_buf (where active=true).
+    // A: Naive solution: just check if the player.x intercepts with a fire.x and if
+    // the player.y > fire.y (will actually be < because of y being flipped).
+    // If true, then add y velocity to the player: play with it.
+    // So, in player simulate: loop through all active fires with health > 0 and
+    // do this check. Add y force if true.
+    for(int i=0; i<MAX_FIRES; i++){
+        Fire* fire = &state->fires_buf[i];
+        if(!fire->active){
+            continue;
+        }
+        // else {
+        //     SDL_Log("fire %p is active\n", fire);
+        // }
+
+        bool above_fire = is_player_above_fire(player, fire);
+        bool in_air = !player->is_grounded;
+        if(above_fire && in_air){
+            //player->yvel -= 5;
+            player->yvel -= 2.5;
+        }
+
+
     }
 
     // Handle water shooting
@@ -520,5 +547,20 @@ void gamestate_switch_level(GameState *state, int new_level_index) {
 
     SDL_Log("Successfully switched to level %d", new_level_index);
     SDL_Log("  Blocks: %d, Fires: %d", state->block_count, state->fire_count);
+}
+
+bool is_player_above_fire(Player *player, Fire *fire){
+    //if(player->x + player->w < fire->x || player->x > fire->x + fire->w){
+    if(player->x + 95 < fire->x || player->x > fire->x + fire->w){
+        return false;
+    }
+
+    // A little rough but should would.
+    //if(player->y + player->h < fire->y){
+    if(player->y + 95 > fire->y){
+        return false;
+    }
+
+    return true;
 }
 

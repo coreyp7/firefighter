@@ -96,4 +96,7 @@ Block* gamestate_get_blocks_buffer(GameState *state);
 void gamestate_switch_level(GameState *state, int new_level_index);
 
 
+// this doesn't need to be in the header
+bool is_player_above_fire(Player *player, Fire *fire);
+
 #endif
