@@ -36,32 +36,15 @@ int main(int argc, char *argv[]) {
         cleanupSDL();
         return 1;
     }
+
+    // Initialize renderer and load all textures
+    if (!init_renderer(window)) {
+        SDL_DestroyWindow(window);
+        cleanupSDL();
+        return 2;
+    }
+
     bool isRunning = true;
-
-    // TODO: move renderer init into renderer module
-    renderer = SDL_CreateRenderer(window, NULL);
-    player_texture = NULL;
-
-    if (!loadImage(renderer, &player_texture, "img/player.webp")) {
-        SDL_DestroyWindow(window);
-        cleanupSDL();
-        return 1;
-    }
-
-    bush_sprite_sheet = NULL;
-    if (!loadImage(renderer, &bush_sprite_sheet, "img/bushes.png")) {
-        SDL_DestroyWindow(window);
-        cleanupSDL();
-        return 2;
-    }
-
-    block_sprite = NULL;
-    if (!loadImage(renderer, &block_sprite, "img/block.png")) {
-        SDL_DestroyWindow(window);
-        cleanupSDL();
-        return 2;
-    }
-
     GameState state;
     init_gamestate(&state, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -112,7 +95,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    SDL_DestroyTexture(player_texture);
+    cleanup_renderer();
     SDL_DestroyWindow(window);
     cleanupSDL();
     cleanup_gamestate(&state);
@@ -140,21 +123,5 @@ bool initSDL(void) {
 void cleanupSDL(void) {
     //IMG_Quit();
     SDL_Quit();
-}
-
-bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char *path) {
-    SDL_Surface *img_surface = IMG_Load(path);
-    if (!img_surface) {
-        return false;
-    }
-
-    *texture = SDL_CreateTextureFromSurface(renderer, img_surface);
-    if (!(*texture)) {
-        SDL_DestroySurface(img_surface);
-        return false;
-    }
-
-    SDL_DestroySurface(img_surface);
-    return true;
 }
 

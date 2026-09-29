@@ -3,6 +3,95 @@
 #include "camera.h"
 #include "debug.h"
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
+
+// Global renderer state
+SDL_Renderer *renderer = NULL;
+SDL_Texture *player_texture = NULL;
+SDL_Texture *bush_sprite_sheet = NULL;
+SDL_Texture *ground_sprite_sheet = NULL;
+
+// Sprite source rectangles for block rendering
+SDL_Rect block_sprites[MAX_BLOCK_SPRITES] = {
+    //{0, 0, 969, 552},  // Sprite 0 - adjust dimensions as needed
+    {590, 15, 180, 180},  // Sprite 0 - adjust dimensions as needed
+    {400, 15, 180, 180}  // Sprite 0 - adjust dimensions as needed
+    // Add more sprite rectangles here as needed
+};
+
+// Helper to load a texture from file
+static bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, const char *path) {
+    SDL_Surface *img_surface = IMG_Load(path);
+    if (!img_surface) {
+        SDL_Log("ERROR: Failed to load image %s: %s", path, SDL_GetError());
+        return false;
+    }
+
+    *texture = SDL_CreateTextureFromSurface(renderer, img_surface);
+    SDL_DestroySurface(img_surface);
+
+    if (!(*texture)) {
+        SDL_Log("ERROR: Failed to create texture from %s: %s", path, SDL_GetError());
+        return false;
+    }
+
+    return true;
+}
+
+bool init_renderer(SDL_Window *window) {
+    // Create renderer
+    renderer = SDL_CreateRenderer(window, NULL);
+    if (!renderer) {
+        SDL_Log("ERROR: Failed to create renderer: %s", SDL_GetError());
+        return false;
+    }
+
+    // Load player texture
+    if (!loadImage(renderer, &player_texture, "img/player.webp")) {
+        SDL_Log("ERROR: Failed to load player texture");
+        cleanup_renderer();
+        return false;
+    }
+
+    // Load bush sprite sheet
+    if (!loadImage(renderer, &bush_sprite_sheet, "img/bushes.png")) {
+        SDL_Log("ERROR: Failed to load bush sprite sheet");
+        cleanup_renderer();
+        return false;
+    }
+
+    // Load ground sprite sheet
+    if (!loadImage(renderer, &ground_sprite_sheet, "img/ground_sprite_sheet.png")) {
+        SDL_Log("ERROR: Failed to load ground sprite sheet");
+        cleanup_renderer();
+        return false;
+    }
+
+    SDL_Log("Renderer initialized successfully");
+    return true;
+}
+
+void cleanup_renderer(void) {
+    if (player_texture) {
+        SDL_DestroyTexture(player_texture);
+        player_texture = NULL;
+    }
+
+    if (bush_sprite_sheet) {
+        SDL_DestroyTexture(bush_sprite_sheet);
+        bush_sprite_sheet = NULL;
+    }
+
+    if (ground_sprite_sheet) {
+        SDL_DestroyTexture(ground_sprite_sheet);
+        ground_sprite_sheet = NULL;
+    }
+
+    if (renderer) {
+        SDL_DestroyRenderer(renderer);
+        renderer = NULL;
+    }
+}
 
 void render_gamestate(EditorState *editor, GameState *state){
     // Render
@@ -13,7 +102,10 @@ void render_gamestate(EditorState *editor, GameState *state){
     for (int i = 0; i < MAX_BLOCK_AMOUNT; i++) {
         Block *block = &state->blocks_buf[i];
         if (!block->active) continue;
-        render_block(renderer, block_sprite, *block, state->camera);
+
+
+        //render_block(renderer, block_sprites[sprite_id], *block, state->camera);
+        render_block(renderer, block->sprite_id, *block, state->camera);
     }
     render_player(renderer, player_texture, &state->player, state->camera);
 
@@ -68,13 +160,18 @@ void render_water_particles(SDL_Renderer *renderer, GameState *state) {
     }
 }
 
-void render_block(SDL_Renderer *renderer, SDL_Texture *texture, Block block, Camera camera) {
+void render_block(SDL_Renderer *renderer, int sprite_id, Block block, Camera camera) {
     SDL_FRect rect = {block.x, block.y, block.w, block.h};
+
+    // Get source rectangle and convert to SDL_FRect
+    SDL_Rect src_rect = block_sprites[sprite_id];
+    SDL_FRect src_frect = {(float)src_rect.x, (float)src_rect.y, (float)src_rect.w, (float)src_rect.h};
+
     SDL_FPoint newpos = convert_pos_to_camera_pos(camera, rect.x, rect.y);
     rect.x = newpos.x;
     rect.y = newpos.y;
-    SDL_RenderTextureRotated(renderer, texture, NULL, &rect, 0.0, NULL, SDL_FLIP_NONE);
-    //SDL_Log("drew block at pos(%f, %f)\n", rect.x, rect.y);
+
+    SDL_RenderTextureRotated(renderer, ground_sprite_sheet, &src_frect, &rect, 0.0, NULL, SDL_FLIP_NONE);
 }
 
 void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera) {
