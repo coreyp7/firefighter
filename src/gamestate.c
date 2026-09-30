@@ -150,12 +150,9 @@ void update_player(GameState *state, float dt) {
     // do this check. Add y force if true.
     for(int i=0; i<MAX_FIRES; i++){
         Fire* fire = &state->fires_buf[i];
-        if(!fire->active){
+        if(!fire->active || fire->health == 0){
             continue;
         }
-        // else {
-        //     SDL_Log("fire %p is active\n", fire);
-        // }
 
         bool above_fire = is_player_above_fire(player, fire);
         bool in_air = !player->is_grounded;
