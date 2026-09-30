@@ -47,6 +47,10 @@ typedef enum InputType {
     INPUT_LEVEL_PREV,  // Press [ key
     INPUT_LEVEL_NEXT,  // Press ] key
 
+    // Sprite selection (block editor mode)
+    INPUT_SPRITE_PREV,  // Press , key
+    INPUT_SPRITE_NEXT,  // Press . key
+
     // Camera movement (editor mode)
     INPUT_CAMERA_LEFT,
     INPUT_CAMERA_RIGHT,

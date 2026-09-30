@@ -103,6 +103,14 @@ void init_input_maps(void) {
     mapping = (InputMapping){ INPUT_LEVEL_NEXT, true, default_handler };
     hashmap_put(&key_down_map, &key, &mapping);
 
+    key = SDLK_COMMA;
+    mapping = (InputMapping){ INPUT_SPRITE_PREV, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_PERIOD;
+    mapping = (InputMapping){ INPUT_SPRITE_NEXT, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
     // Populate key up mappings
     key = SDLK_A;
     mapping = (InputMapping){ INPUT_MOVE_LEFT_UP, false, default_handler };
@@ -292,6 +300,20 @@ void processEditorInput(EditorState *editor, GameState *state, InputBuffer *inpu
             case INPUT_LEVEL_NEXT:
                 if (state->current_level_index < MAX_LEVELS - 1) {
                     gamestate_switch_level(state, state->current_level_index + 1);
+                }
+                break;
+
+            case INPUT_SPRITE_PREV:
+                if (editor->current_sprite_id > 0) {
+                    editor->current_sprite_id--;
+                    SDL_Log("Selected sprite ID: %d", editor->current_sprite_id);
+                }
+                break;
+
+            case INPUT_SPRITE_NEXT:
+                if (editor->current_sprite_id < 6) {
+                    editor->current_sprite_id++;
+                    SDL_Log("Selected sprite ID: %d", editor->current_sprite_id);
                 }
                 break;
 

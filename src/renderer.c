@@ -4,6 +4,7 @@
 #include "debug.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <stdio.h>
 
 // Global renderer state
 SDL_Renderer *renderer = NULL;
@@ -13,9 +14,11 @@ SDL_Texture *ground_sprite_sheet = NULL;
 
 // Sprite source rectangles for block rendering
 SDL_Rect block_sprites[MAX_BLOCK_SPRITES] = {
-    //{0, 0, 969, 552},  // Sprite 0 - adjust dimensions as needed
-    {590, 15, 180, 180},  // Sprite 0 - adjust dimensions as needed
-    {400, 15, 180, 180}  // Sprite 0 - adjust dimensions as needed
+    //{0, 0, 969, 552},
+    {590, 15, 180, 180}, // Index 0: Middle ground
+    {400, 15, 180, 180}, // Index 1: Left Edge
+    {770, 15, 180, 180}, // Index 2: Right Edge
+    {770, 195, 180, 180} // Index 3: Middle ground filler
     // Add more sprite rectangles here as needed
 };
 
@@ -212,16 +215,32 @@ void render_fires(SDL_Renderer *renderer, GameState *state) {
 
 // TODO: this will likely be moved to debug module.
 void render_editor_ui(SDL_Renderer *renderer, EditorState *editor, GameState *state) {
-    // Mode indicator showing current editor mode
-    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 100);
-    SDL_FRect mode_indicator = {(720/2), 5, 150, 20};
-    SDL_RenderFillRect(renderer, &mode_indicator);
-    // TODO: Add text rendering to show "FIRE EDITOR" or "BLOCK EDITOR"
+    // Render editor controls at top of screen
+    float text_x = 10.0f;
+    float text_y = 10.0f;
+    float line_height = 20.0f;
+
+    EditorMode mode = editor_get_mode(editor);
+
+    if (mode == EDITOR_MODE_FIRE) {
+        debug_render_text(renderer, "FIRE EDITOR MODE", text_x, text_y);
+        text_y += line_height;
+        debug_render_text(renderer, "1: Fire Mode | 2: Block Mode | F1: Exit Editor", text_x, text_y);
+        text_y += line_height;
+        debug_render_text(renderer, "L-Click: Place/Connect | R-Click: Delete | [/]: Switch Level | L/P: Load/Save", text_x, text_y);
+    } else {
+        debug_render_text(renderer, "BLOCK EDITOR MODE", text_x, text_y);
+        text_y += line_height;
+        debug_render_text(renderer, "1: Fire Mode | 2: Block Mode | F1: Exit Editor", text_x, text_y);
+        text_y += line_height;
+
+        char sprite_text[128];
+        snprintf(sprite_text, sizeof(sprite_text), "L-Click: Place | R-Click: Delete | ,/.: Sprite ID (%d) | [/]: Switch Level | L/P: Load/Save", editor->current_sprite_id);
+        debug_render_text(renderer, sprite_text, text_x, text_y);
+    }
 
     float world_x = state->player.cursor_x + state->camera.x;
     float world_y = state->player.cursor_y + state->camera.y;
-
-    EditorMode mode = editor_get_mode(editor);
 
     if (mode == EDITOR_MODE_FIRE) {
         // Fire editor mode rendering
@@ -332,14 +351,23 @@ void render_editor_ui(SDL_Renderer *renderer, EditorState *editor, GameState *st
             SDL_RenderRect(renderer, &block_rect);
         } else {
             // Draw block placement preview at cursor (250x250 default size)
+            // Show the actual sprite that will be placed
             SDL_FRect preview_rect = {
                 state->player.cursor_x - 125,
                 state->player.cursor_y - 125,
                 250, 250
             };
 
-            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 100);
-            SDL_RenderFillRect(renderer, &preview_rect);
+            // Get source rectangle for the selected sprite
+            SDL_Rect src_rect = block_sprites[editor->current_sprite_id];
+            SDL_FRect src_frect = {(float)src_rect.x, (float)src_rect.y, (float)src_rect.w, (float)src_rect.h};
+
+            // Render the sprite with semi-transparency
+            SDL_SetTextureAlphaMod(ground_sprite_sheet, 150);
+            SDL_RenderTextureRotated(renderer, ground_sprite_sheet, &src_frect, &preview_rect, 0.0, NULL, SDL_FLIP_NONE);
+            SDL_SetTextureAlphaMod(ground_sprite_sheet, 255);
+
+            // Draw white outline
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150);
             SDL_RenderRect(renderer, &preview_rect);
         }

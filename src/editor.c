@@ -9,6 +9,7 @@ void editor_init(EditorState *editor) {
     editor->is_active = false;
     editor->camera_move_speed = 10.0f;
     editor->current_mode = EDITOR_MODE_FIRE;
+    editor->current_sprite_id = 0;
 }
 
 void editor_activate(EditorState *editor, GameState *game) {
@@ -16,6 +17,7 @@ void editor_activate(EditorState *editor, GameState *game) {
     editor->selected_fire = NULL;
     editor->selected_block = NULL;
     editor->current_mode = EDITOR_MODE_FIRE;
+    editor->current_sprite_id = 0;
     SDL_Log("Switched to FIRE EDITOR mode");
 }
 
@@ -131,7 +133,9 @@ void editor_handle_block_left_click(EditorState *editor, GameState *game, float 
         Block *block = gamestate_add_block(game, world_x - 125, world_y - 125, 250, 250);
 
         if (block != NULL) {
-            SDL_Log("Placed new block at (%f, %f)", world_x, world_y);
+            block->sprite_id = editor->current_sprite_id;
+            SDL_Log("Placed new block at (%f, %f) with sprite_id %d",
+                    world_x, world_y, editor->current_sprite_id);
         }
 
         editor->selected_block = NULL;

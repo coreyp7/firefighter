@@ -16,6 +16,7 @@ void debug_render(SDL_Renderer *renderer, GameState *state, float frame_time_ms)
 void debug_render_fire_health(SDL_Renderer *renderer, Fire *fire, Camera camera);
 void debug_render_fire_neighbors(SDL_Renderer *renderer, GameState *state);
 void debug_render_fire_hover_info(SDL_Renderer *renderer, GameState *state);
+void debug_render_text(SDL_Renderer *renderer, const char *text, float x, float y);
 void cleanup_debug(void);
 
 #endif

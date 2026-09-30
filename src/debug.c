@@ -64,6 +64,10 @@ static void render_text(SDL_Renderer *renderer, const char *text, float x, float
     SDL_DestroyTexture(texture);
 }
 
+void debug_render_text(SDL_Renderer *renderer, const char *text, float x, float y) {
+    render_text(renderer, text, x, y);
+}
+
 static void render_frame_time_text(SDL_Renderer *renderer, float frame_time_ms, float x_offset, float y_offset) {
     char text[64];
     snprintf(text, sizeof(text), "Frame: %.2f ms", frame_time_ms);

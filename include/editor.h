@@ -17,6 +17,7 @@ typedef struct EditorState {
     bool is_active; // is editor mode active?
     float camera_move_speed; // this is lazily fps based for now
     EditorMode current_mode;
+    int current_sprite_id; // sprite_id for next placed block (0-6)
 } EditorState;
 
 // Lifecycle
