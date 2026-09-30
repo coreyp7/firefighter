@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
 
     InputBuffer input_buffer;
     init_input_buffer(&input_buffer);
+    init_input_maps();
 
     SDL_ShowWindow(window);
     init_water_particles();

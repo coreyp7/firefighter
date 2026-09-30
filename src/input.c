@@ -4,11 +4,124 @@
 #include "level_io.h"
 #include "input_config.h"
 #include "debug.h"
+#include "hashmap.h"
 #include <SDL3/SDL.h>
 #include <string.h>
 
+// Handler function type - called after input type is set
+typedef void (*InputHandler)(InputEvent *event, SDL_Event *sdl_event);
+
+// Default handler - no special processing needed
+static void default_handler(InputEvent *event, SDL_Event *sdl_event) {
+    (void)event;
+    (void)sdl_event;
+}
+
+// Mouse handler - captures click coordinates
+static void mouse_handler(InputEvent *event, SDL_Event *sdl_event) {
+    event->mouse_x = sdl_event->button.x;
+    event->mouse_y = sdl_event->button.y;
+}
+
+// Mapping structure for input bindings
+typedef struct {
+    InputType input_type;
+    bool requires_debug;
+    InputHandler handler;
+} InputMapping;
+
+// Hash maps for O(1) input lookups
+static HashMap key_down_map;
+static HashMap key_up_map;
+static HashMap mouse_map;
+
 void init_input_buffer(InputBuffer *buffer) {
     memset(buffer, 0, sizeof(InputBuffer));
+}
+
+void init_input_maps(void) {
+    // Initialize hash maps
+    hashmap_init(&key_down_map, 32, sizeof(SDL_Keycode), sizeof(InputMapping),
+                 hashmap_hash_int, hashmap_key_equals_default);
+    hashmap_init(&key_up_map, 32, sizeof(SDL_Keycode), sizeof(InputMapping),
+                 hashmap_hash_int, hashmap_key_equals_default);
+    hashmap_init(&mouse_map, 8, sizeof(Uint8), sizeof(InputMapping),
+                 hashmap_hash_int, hashmap_key_equals_default);
+
+    // Populate key down mappings
+    SDL_Keycode key;
+    InputMapping mapping;
+
+    // Editor mode toggle (debug only)
+    key = SDLK_F1;
+    mapping = (InputMapping){ INPUT_TOGGLE_MODE, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_0;
+    mapping = (InputMapping){ INPUT_TOGGLE_MODE, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    // Player movement (always available)
+    key = SDLK_A;
+    mapping = (InputMapping){ INPUT_MOVE_LEFT_DOWN, false, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_D;
+    mapping = (InputMapping){ INPUT_MOVE_RIGHT_DOWN, false, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_W;
+    mapping = (InputMapping){ INPUT_JUMP, false, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_S;
+    mapping = (InputMapping){ INPUT_MOVE_DOWN_DOWN, false, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    // Editor controls (debug only)
+    key = SDLK_L;
+    mapping = (InputMapping){ INPUT_EDITOR_LOAD, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_P;
+    mapping = (InputMapping){ INPUT_EDITOR_SAVE, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_1;
+    mapping = (InputMapping){ INPUT_EDITOR_MODE_FIRE, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_2;
+    mapping = (InputMapping){ INPUT_EDITOR_MODE_BLOCK, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_LEFTBRACKET;
+    mapping = (InputMapping){ INPUT_LEVEL_PREV, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    key = SDLK_RIGHTBRACKET;
+    mapping = (InputMapping){ INPUT_LEVEL_NEXT, true, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
+    // Populate key up mappings
+    key = SDLK_A;
+    mapping = (InputMapping){ INPUT_MOVE_LEFT_UP, false, default_handler };
+    hashmap_put(&key_up_map, &key, &mapping);
+
+    key = SDLK_D;
+    mapping = (InputMapping){ INPUT_MOVE_RIGHT_UP, false, default_handler };
+    hashmap_put(&key_up_map, &key, &mapping);
+
+    // Populate mouse mappings
+    Uint8 button;
+
+    button = SDL_BUTTON_LEFT;
+    mapping = (InputMapping){ INPUT_MOUSE_LEFT_CLICK, true, mouse_handler };
+    hashmap_put(&mouse_map, &button, &mapping);
+
+    button = SDL_BUTTON_RIGHT;
+    mapping = (InputMapping){ INPUT_MOUSE_RIGHT_CLICK, true, mouse_handler };
+    hashmap_put(&mouse_map, &button, &mapping);
 }
 
 void gather_input(InputBuffer *buffer, bool *isRunning) {
@@ -31,71 +144,41 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
                 buffer->event_count++;
                 break;
 
-            // REFACTOR: this sucks, change when you need to.
-            // Make a switch or something.
-            case SDL_EVENT_KEY_DOWN:
-                if (debug && (event.key.key == SDLK_F1 || event.key.key == SDLK_0)) {
-                    input_event->type = INPUT_TOGGLE_MODE;
-                    buffer->event_count++;
-                } else if (event.key.key == SDLK_A) {
-                    input_event->type = INPUT_MOVE_LEFT_DOWN;
-                    buffer->event_count++;
-                } else if (event.key.key == SDLK_D) {
-                    input_event->type = INPUT_MOVE_RIGHT_DOWN;
-                    buffer->event_count++;
-                } else if (event.key.key == SDLK_W) {
-                    input_event->type = INPUT_JUMP;
-                    buffer->event_count++;
-                } else if (event.key.key == SDLK_S) {
-                    input_event->type = INPUT_MOVE_DOWN_DOWN;
-                    buffer->event_count++;
-                } else if (event.key.key == SDLK_W) {
-                    input_event->type = INPUT_MOVE_UP_DOWN;
-                    buffer->event_count++;
-                } else if (debug && event.key.key == SDLK_L) {
-                    input_event->type = INPUT_EDITOR_LOAD;
-                    buffer->event_count++;
-                } else if (debug && event.key.key == SDLK_P) {
-                    input_event->type = INPUT_EDITOR_SAVE;
-                    buffer->event_count++;
-                } else if (debug && event.key.key == SDLK_1) {
-                    input_event->type = INPUT_EDITOR_MODE_FIRE;
-                    buffer->event_count++;
-                } else if (debug && event.key.key == SDLK_2) {
-                    input_event->type = INPUT_EDITOR_MODE_BLOCK;
-                    buffer->event_count++;
-                } else if (debug && event.key.key == SDLK_LEFTBRACKET) {
-                    input_event->type = INPUT_LEVEL_PREV;
-                    buffer->event_count++;
-                } else if (debug && event.key.key == SDLK_RIGHTBRACKET) {
-                    input_event->type = INPUT_LEVEL_NEXT;
-                    buffer->event_count++;
-                }
-                break;
+            case SDL_EVENT_KEY_DOWN: {
+                SDL_Keycode pressed_key = event.key.key;
+                InputMapping *mapping = (InputMapping*)hashmap_get(&key_down_map, &pressed_key);
 
-            case SDL_EVENT_KEY_UP:
-                if (event.key.key == SDLK_A) {
-                    input_event->type = INPUT_MOVE_LEFT_UP;
-                    buffer->event_count++;
-                } else if (event.key.key == SDLK_D) {
-                    input_event->type = INPUT_MOVE_RIGHT_UP;
+                if (mapping && (!mapping->requires_debug || debug)) {
+                    input_event->type = mapping->input_type;
+                    mapping->handler(input_event, &event);
                     buffer->event_count++;
                 }
                 break;
+            }
 
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if (debug && event.button.button == SDL_BUTTON_LEFT) {
-                    input_event->type = INPUT_MOUSE_LEFT_CLICK;
-                    input_event->mouse_x = event.button.x;
-                    input_event->mouse_y = event.button.y;
-                    buffer->event_count++;
-                } else if (debug && event.button.button == SDL_BUTTON_RIGHT) {
-                    input_event->type = INPUT_MOUSE_RIGHT_CLICK;
-                    input_event->mouse_x = event.button.x;
-                    input_event->mouse_y = event.button.y;
+            case SDL_EVENT_KEY_UP: {
+                SDL_Keycode released_key = event.key.key;
+                InputMapping *mapping = (InputMapping*)hashmap_get(&key_up_map, &released_key);
+
+                if (mapping && (!mapping->requires_debug || debug)) {
+                    input_event->type = mapping->input_type;
+                    mapping->handler(input_event, &event);
                     buffer->event_count++;
                 }
                 break;
+            }
+
+            case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+                Uint8 pressed_button = event.button.button;
+                InputMapping *mapping = (InputMapping*)hashmap_get(&mouse_map, &pressed_button);
+
+                if (mapping && (!mapping->requires_debug || debug)) {
+                    input_event->type = mapping->input_type;
+                    mapping->handler(input_event, &event);
+                    buffer->event_count++;
+                }
+                break;
+            }
         }
     }
 

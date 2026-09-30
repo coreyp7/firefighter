@@ -75,6 +75,7 @@ typedef struct InputBuffer {
 } InputBuffer;
 
 void init_input_buffer(InputBuffer *buffer);
+void init_input_maps(void);
 void gather_input(InputBuffer *buffer, bool *isRunning);
 
 // Main input processing functions
