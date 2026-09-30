@@ -3,9 +3,13 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <stdbool.h>
 #include "fire.h"
 #include "camera.h"
 #include "gamestate.h"
+
+// Global debug mode flag (set during init in main.c)
+extern bool debug;
 
 void init_debug(SDL_Renderer *renderer);
 void debug_render(SDL_Renderer *renderer, GameState *state, float frame_time_ms);

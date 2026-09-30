@@ -3,6 +3,7 @@
 #include "editor.h"
 #include "level_io.h"
 #include "input_config.h"
+#include "debug.h"
 #include <SDL3/SDL.h>
 #include <string.h>
 
@@ -33,7 +34,7 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
             // REFACTOR: this sucks, change when you need to.
             // Make a switch or something.
             case SDL_EVENT_KEY_DOWN:
-                if (event.key.key == SDLK_F1 || event.key.key == SDLK_0) {
+                if (debug && (event.key.key == SDLK_F1 || event.key.key == SDLK_0)) {
                     input_event->type = INPUT_TOGGLE_MODE;
                     buffer->event_count++;
                 } else if (event.key.key == SDLK_A) {
@@ -51,22 +52,22 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
                 } else if (event.key.key == SDLK_W) {
                     input_event->type = INPUT_MOVE_UP_DOWN;
                     buffer->event_count++;
-                } else if (event.key.key == SDLK_L) {
+                } else if (debug && event.key.key == SDLK_L) {
                     input_event->type = INPUT_EDITOR_LOAD;
                     buffer->event_count++;
-                } else if (event.key.key == SDLK_P) {
+                } else if (debug && event.key.key == SDLK_P) {
                     input_event->type = INPUT_EDITOR_SAVE;
                     buffer->event_count++;
-                } else if (event.key.key == SDLK_1) {
+                } else if (debug && event.key.key == SDLK_1) {
                     input_event->type = INPUT_EDITOR_MODE_FIRE;
                     buffer->event_count++;
-                } else if (event.key.key == SDLK_2) {
+                } else if (debug && event.key.key == SDLK_2) {
                     input_event->type = INPUT_EDITOR_MODE_BLOCK;
                     buffer->event_count++;
-                } else if (event.key.key == SDLK_LEFTBRACKET) {
+                } else if (debug && event.key.key == SDLK_LEFTBRACKET) {
                     input_event->type = INPUT_LEVEL_PREV;
                     buffer->event_count++;
-                } else if (event.key.key == SDLK_RIGHTBRACKET) {
+                } else if (debug && event.key.key == SDLK_RIGHTBRACKET) {
                     input_event->type = INPUT_LEVEL_NEXT;
                     buffer->event_count++;
                 }
@@ -83,12 +84,12 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
                 break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if (event.button.button == SDL_BUTTON_LEFT) {
+                if (debug && event.button.button == SDL_BUTTON_LEFT) {
                     input_event->type = INPUT_MOUSE_LEFT_CLICK;
                     input_event->mouse_x = event.button.x;
                     input_event->mouse_y = event.button.y;
                     buffer->event_count++;
-                } else if (event.button.button == SDL_BUTTON_RIGHT) {
+                } else if (debug && event.button.button == SDL_BUTTON_RIGHT) {
                     input_event->type = INPUT_MOUSE_RIGHT_CLICK;
                     input_event->mouse_x = event.button.x;
                     input_event->mouse_y = event.button.y;

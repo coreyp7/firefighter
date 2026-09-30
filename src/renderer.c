@@ -204,10 +204,13 @@ void render_fires(SDL_Renderer *renderer, GameState *state) {
             continue;
         }
         render_fire(renderer, &state->fires_buf[i], state->camera);
-        debug_render_fire_health(renderer, &state->fires_buf[i], state->camera);
+        if(debug){
+            debug_render_fire_health(renderer, &state->fires_buf[i], state->camera);
+        }
     }
 }
 
+// TODO: this will likely be moved to debug module.
 void render_editor_ui(SDL_Renderer *renderer, EditorState *editor, GameState *state) {
     // Mode indicator showing current editor mode
     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 100);

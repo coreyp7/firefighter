@@ -3,6 +3,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdint.h>
 #include <math.h>
+#include <string.h>
 
 #include "gamestate.h"
 #include "editor.h"
@@ -24,9 +25,16 @@ bool loadImage(SDL_Renderer *renderer, SDL_Texture **texture, char* path);
 const int WINDOW_HEIGHT = 720;
 const int WINDOW_WIDTH = 1080;
 
+// extern from debug.c
+bool debug = false;
+
 int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--debug") == 0) {
+            debug = true;
+            SDL_Log("Debug mode enabled");
+        }
+    }
 
     initSDL();
     random_init();
@@ -59,7 +67,9 @@ int main(int argc, char *argv[]) {
 
     SDL_ShowWindow(window);
     init_water_particles();
-    init_debug(renderer);
+    if (debug) {
+        init_debug(renderer);
+    }
 
     level_load_all_levels(&state, "fire_layouts/levelpack.txt");
 
@@ -85,7 +95,10 @@ int main(int argc, char *argv[]) {
 
         // vsync
         uint32 time_of_frame = SDL_GetTicks() - start_ticks;
-        debug_render(renderer, &state, (float)time_of_frame);
+        // TODO: add this var and extern so renderer can access
+        if(debug){
+            debug_render(renderer, &state, (float)time_of_frame);
+        }
 
         SDL_RenderPresent(renderer);
         uint32 required_length_of_frame = 1000.0 / 60.0; // 60 fps
@@ -100,7 +113,9 @@ int main(int argc, char *argv[]) {
     cleanupSDL();
     cleanup_gamestate(&state);
     cleanup_water_particles();
-    cleanup_debug();
+    if (debug) {
+        cleanup_debug();
+    }
 
     return 0;
 }
