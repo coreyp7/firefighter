@@ -148,6 +148,8 @@ void update_player(GameState *state, float dt) {
     // If true, then add y velocity to the player: play with it.
     // So, in player simulate: loop through all active fires with health > 0 and
     // do this check. Add y force if true.
+    int max_boosts = 2; // TODO: move into constant
+    int boosts = 0;
     for(int i=0; i<MAX_FIRES; i++){
         Fire* fire = &state->fires_buf[i];
         if(!fire->active || fire->health == 0){
@@ -157,11 +159,14 @@ void update_player(GameState *state, float dt) {
         bool above_fire = is_player_above_fire(player, fire);
         bool in_air = !player->is_grounded;
         if(above_fire && in_air){
-            //player->yvel -= 5;
-            player->yvel -= 2.5;
+            // player->yvel -= 2.5;
+            player->yvel -= 2.0;
+            boosts += 1;
         }
 
-
+        if(boosts >= max_boosts){
+            break;
+        }
     }
 
     // Handle water shooting
@@ -285,7 +290,8 @@ void update_fires(GameState *state, float dt){
             if(is_fire_alive(neighbor) && can_be_hit){
             // TODO: update this to be dynamic based on how active
             // the neighbor fire is. (is this already done elsewhere)
-                fire->health += 0.1;
+                //fire->health += 0.1;
+                fire->health += 0.2;
             }
         }
     }
