@@ -15,7 +15,7 @@ SDL_Texture *ground_sprite_sheet = NULL;
 // Sprite source rectangles for block rendering
 SDL_Rect block_sprites[MAX_BLOCK_SPRITES] = {
     //{0, 0, 969, 552},
-    {590, 15, 180, 180}, // Index 0: Middle ground
+    {595, 15, 180, 175}, // Index 0: Middle ground
     {400, 15, 180, 180}, // Index 1: Left Edge
     {770, 15, 180, 180}, // Index 2: Right Edge
     {770, 195, 180, 180} // Index 3: Middle ground filler
