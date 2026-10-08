@@ -6,6 +6,7 @@
 #include "fire.h"
 #include "block.h"
 #include "pool.h"
+#include "particle_fire.h"
 
 #define MAX_WATER_PARTICLES 500
 #define MAX_BLOCK_AMOUNT 30
@@ -62,6 +63,7 @@ typedef struct GameState {
     // that they're active.
     int fire_count;
     Camera camera;
+    ParticleFireSystem fire_particles;
     Level levels[MAX_LEVELS];
     int current_level_index;
 } GameState;

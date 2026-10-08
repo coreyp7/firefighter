@@ -11,6 +11,11 @@ SDL_Renderer *renderer = NULL;
 SDL_Texture *player_texture = NULL;
 SDL_Texture *bush_sprite_sheet = NULL;
 SDL_Texture *ground_sprite_sheet = NULL;
+SDL_Texture *fire_sprite_sheet = NULL;
+
+SDL_Rect fire_sprites[10] = {
+    {38, 144, 72, 40}
+};
 
 // Sprite source rectangles for block rendering
 SDL_Rect block_sprites[MAX_BLOCK_SPRITES] = {
@@ -70,6 +75,12 @@ bool init_renderer(SDL_Window *window) {
         return false;
     }
 
+    if (!loadImage(renderer, &fire_sprite_sheet, "img/fire_spritesheet.jpeg")) {
+        SDL_Log("ERROR: Failed to load ground sprite sheet");
+        cleanup_renderer();
+        return false;
+    }
+
     SDL_Log("Renderer initialized successfully");
     return true;
 }
@@ -123,13 +134,19 @@ void render_gamestate(EditorState *editor, GameState *state){
     // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     // SDL_RenderRect(renderer, &destrect);
 
-    render_fires(renderer, state);
+    // Render particle fires
+    particle_fire_render(&state->fire_particles, renderer, state->camera);
+
+    render_fires(renderer, state); // leaving just for debug health view
     render_water_particles(renderer, state);
 
     // Render editor UI if in editor mode
     if (editor_is_active(editor)) {
         render_editor_ui(renderer, editor, state);
     }
+
+    SDL_Rect test_rect = {0, 400, 500, 500};
+    SDL_RenderTextureRotated(renderer, fire_sprite_sheet, &fire_sprites[0], &test_rect, 0.0, NULL, SDL_FLIP_NONE);
 }
 
 void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player,
@@ -191,10 +208,11 @@ void render_fire(SDL_Renderer *renderer, Fire *fire, Camera camera) {
     float fire_opacity = 100 * fire_strength;
 
     SDL_SetRenderDrawColor(renderer, 255, 100, 0, fire_opacity);
-    SDL_RenderFillRect(renderer, &fire_rect);
+    //SDL_RenderFillRect(renderer, &fire_rect);
+    SDL_RenderTextureRotated(renderer, fire_sprite_sheet, &fire_sprites[0], &fire_rect, 0.0, NULL, SDL_FLIP_NONE);
 
-    SDL_SetRenderDrawColor(renderer, 255, 50, 0, fire_opacity);
-    SDL_RenderRect(renderer, &fire_rect);
+    // SDL_SetRenderDrawColor(renderer, 255, 50, 0, fire_opacity);
+    // SDL_RenderRect(renderer, &fire_rect);
 }
 
 void render_fires(SDL_Renderer *renderer, GameState *state) {
@@ -206,7 +224,7 @@ void render_fires(SDL_Renderer *renderer, GameState *state) {
         if(state->fires_buf[i].health <= 0) {
             continue;
         }
-        render_fire(renderer, &state->fires_buf[i], state->camera);
+        //render_fire(renderer, &state->fires_buf[i], state->camera);
         if(debug){
             debug_render_fire_health(renderer, &state->fires_buf[i], state->camera);
         }

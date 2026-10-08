@@ -68,6 +68,9 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->fire_count = 0;
 
     state->camera = (Camera){0, 0, window_width, window_height};
+
+    // Initialize particle fire system (starts with no emitters)
+    particle_fire_init(&state->fire_particles, 0, 0);
 }
 
 void simulate_gamestate(GameState *state, float dt) {
@@ -75,10 +78,27 @@ void simulate_gamestate(GameState *state, float dt) {
     simulate_water_particles(state, dt);
     check_water_fire_collisions(state);
     update_fires(state, dt);
+
+    // Sync particle fire emitters with active fires
+    particle_fire_clear_emitters(&state->fire_particles);
+
+    for (int i = 0; i < MAX_FIRES; i++) {
+        Fire *fire = &state->fires_buf[i];
+        if (fire->active && fire->health > 0) {
+            // Place emitter at center of fire
+            float emitter_x = fire->x + fire->w / 2.0f;
+            float emitter_y = fire->y + fire->h / 2.0f;
+            particle_fire_add_emitter(&state->fire_particles, emitter_x, emitter_y);
+        }
+    }
+
+    // Update particle system
+    particle_fire_update(&state->fire_particles, dt);
 }
 
 void cleanup_gamestate(GameState *state) {
     state->particle_count = 0;
+    particle_fire_cleanup(&state->fire_particles);
 }
 
 // TODO: maybe split this up into some functions.

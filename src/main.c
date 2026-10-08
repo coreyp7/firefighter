@@ -15,6 +15,7 @@
 #include "pool.h"
 #include "random_utils.h"
 #include "level_io.h"
+#include "particle_fire.h"
 
 typedef uint32_t uint32;
 
