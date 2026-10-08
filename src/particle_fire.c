@@ -106,12 +106,13 @@ void particle_fire_update(ParticleFireSystem *system, Fire *fires_buf, int max_f
         }
 
         // Update emitter position (in case fire moved)
-        fire->emitter.x = fire->x + fire->w / 2.0f;
-        fire->emitter.y = fire->y + fire->h / 2.0f;
+        // fire->emitter.x = fire->x + fire->w / 2.0f;
+        // fire->emitter.y = fire->y + fire->h / 2.0f;
 
         // Calculate desired particles per frame based on health
         float health_ratio = fire->health / fire->max_health;
-        float particles_per_frame = 0.2f + (health_ratio * 7.8f);  // 0.2 - 8.0 range
+        //float particles_per_frame = 0.2f + (health_ratio * 7.8f);  // 0.2 - 8.0 range
+        float particles_per_frame = health_ratio * 2.5;
 
         // Convert to spawn interval (seconds between spawns)
         // At 60fps, 1 frame = 1/60 second

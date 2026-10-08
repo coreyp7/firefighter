@@ -12,6 +12,7 @@ SDL_Texture *player_texture = NULL;
 SDL_Texture *bush_sprite_sheet = NULL;
 SDL_Texture *ground_sprite_sheet = NULL;
 SDL_Texture *fire_sprite_sheet = NULL;
+SDL_Texture *player_sprite_sheet = NULL;
 
 SDL_Rect fire_sprites[10] = {
     {38, 144, 72, 40}
@@ -25,6 +26,14 @@ SDL_Rect block_sprites[MAX_BLOCK_SPRITES] = {
     {770, 15, 180, 180}, // Index 2: Right Edge
     {770, 195, 180, 180} // Index 3: Middle ground filler
     // Add more sprite rectangles here as needed
+};
+
+SDL_FRect player_sprite_sheet_rects[5] = {
+    {159, 550, 230, 400},
+    //{0, 0, 1000, 500}
+    {566, 531, 230, 400},
+    {924, 540, 230, 400},
+    {1238, 540, 230, 400}
 };
 
 // Helper to load a texture from file
@@ -81,6 +90,12 @@ bool init_renderer(SDL_Window *window) {
         return false;
     }
 
+    if (!loadImage(renderer, &player_sprite_sheet, "img/prince_alpha.png")) {
+        SDL_Log("ERROR: Failed to load ground sprite sheet");
+        cleanup_renderer();
+        return false;
+    }
+
     SDL_Log("Renderer initialized successfully");
     return true;
 }
@@ -121,7 +136,29 @@ void render_gamestate(EditorState *editor, GameState *state){
         //render_block(renderer, block_sprites[sprite_id], *block, state->camera);
         render_block(renderer, block->sprite_id, *block, state->camera);
     }
-    render_player(renderer, player_texture, &state->player, state->camera);
+
+    //render_player(renderer, player_texture, &state->player, state->camera);
+    SDL_FRect player_rect = {state->player.x, state->player.y, 95, 95};
+    SDL_FlipMode flipMode = SDL_FLIP_NONE;
+    if(state->player.is_facing_left){
+        flipMode = SDL_FLIP_HORIZONTAL;
+    }
+    SDL_FPoint newpos = convert_pos_to_camera_pos(state->camera, player_rect.x, player_rect.y);
+    player_rect.x = newpos.x;
+    player_rect.y = newpos.y;
+
+    SDL_RenderTextureRotated(renderer,
+                             player_sprite_sheet,
+                             &player_sprite_sheet_rects[0],
+                             //&test_rect,
+                             &player_rect, 0.0, NULL, flipMode
+    );
+
+    // SDL_RenderTextureRotated(renderer,
+    //                          player_texture,
+    //                          NULL,
+    //                          &player_rect, 0.0, NULL, flipMode
+    // );
 
     // SDL_FRect srcrect = {288, 32, 200, 180};
     // SDL_FRect destrect = {250, 75, 150, 150};
@@ -145,8 +182,9 @@ void render_gamestate(EditorState *editor, GameState *state){
         render_editor_ui(renderer, editor, state);
     }
 
-    SDL_Rect test_rect = {0, 400, 500, 500};
-    SDL_RenderTextureRotated(renderer, fire_sprite_sheet, &fire_sprites[0], &test_rect, 0.0, NULL, SDL_FLIP_NONE);
+    SDL_FRect test_rect = {0, 0, 1000, 500};
+    //convert_camera_pos_to_global(state->camera, &test_rect.x, &test_rect.y);
+    //SDL_RenderTextureRotated(renderer, fire_sprite_sheet, &fire_sprites[0], &test_rect, 0.0, NULL, SDL_FLIP_NONE);
 }
 
 void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player,

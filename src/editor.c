@@ -56,7 +56,7 @@ void editor_handle_left_click(EditorState *editor, GameState *game, float world_
         }
     } else {
         // Clicked on nothing, place new fire
-        Fire *fire = gamestate_add_fire(game, world_x - 25, world_y - 25, 50, 50, 10);
+        Fire *fire = gamestate_add_fire(game, world_x - 25, world_y - 25, 40, 40, 40);
 
         if (fire != NULL) {
             SDL_Log("Placed new fire at (%f, %f)", world_x, world_y);
