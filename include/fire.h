@@ -7,6 +7,16 @@
 #define MAX_FIRES 100
 #define MAX_NEIGHBORS 8
 
+// The emitter is really only in here for convenience for the renderer.
+// Allows renderer to easily look at the health of the fire its rendering
+typedef struct FireEmitter {
+    float x, y;
+    int particles_per_frame;
+    float spawn_spread;
+    float time_since_spawn;
+    float spawn_interval;
+} FireEmitter;
+
 typedef struct Fire {
     float x;
     float y;
@@ -19,6 +29,7 @@ typedef struct Fire {
     bool active; // in pool context, is this a valid fire?
     int last_put_out;
     int last_hit_with_water;
+    FireEmitter emitter;
 } Fire;
 
 void init_fire(Fire *fire, float x, float y, float w, float h, float health);

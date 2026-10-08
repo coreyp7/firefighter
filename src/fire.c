@@ -15,6 +15,13 @@ void init_fire(Fire *fire, float x, float y, float w, float h, float health) {
     fire->active = true;
     fire->last_put_out = 0;
     fire->last_hit_with_water = 0;
+
+    fire->emitter.x = x + w / 2.0f;
+    fire->emitter.y = y + h / 2.0f;
+    fire->emitter.particles_per_frame = 3;
+    fire->emitter.spawn_spread = 15.0f;
+    fire->emitter.time_since_spawn = 0.0f;
+    fire->emitter.spawn_interval = 1.0f / 60.0f / 1.0f;  // 3 particles per frame (we're always 60fps)
 }
 
 // TODO: this function is okay, but logic should be entirely based off health.
@@ -24,7 +31,8 @@ void init_fire(Fire *fire, float x, float y, float w, float h, float health) {
 bool is_fire_alive(Fire *fire) {
     float health_percentage_relative = fire->health / fire->max_health;
     //return health_percentage_relative >= 0.3;
-    return health_percentage_relative >= 0.75;
+    //return health_percentage_relative >= 0.75;
+    return health_percentage_relative >= 0.35;
 }
 
 // Used when loading levels. Makes it easier to setup

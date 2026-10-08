@@ -18,13 +18,7 @@ static float clampf(float value, float min, float max) {
     return value;
 }
 
-static void spawn_particle(ParticleFireSystem *system) {
-    // Pick a random emitter
-    if (system->emitter_count == 0) return;
-
-    int emitter_index = random_int_range(0, system->emitter_count - 1);
-    FireEmitter *emitter = &system->emitters[emitter_index];
-
+static void spawn_particle_from_emitter(ParticleFireSystem *system, FireEmitter *emitter) {
     // Find inactive particle slot
     for (int i = 0; i < MAX_FIRE_PARTICLES; i++) {
         if (!system->particles[i].active) {
@@ -82,21 +76,15 @@ static void get_fire_color(float age, uint8_t *r, uint8_t *g, uint8_t *b) {
     }
 }
 
-void particle_fire_init(ParticleFireSystem *system, float emitter_x, float emitter_y) {
+void particle_fire_init(ParticleFireSystem *system) {
     memset(system, 0, sizeof(ParticleFireSystem));
 
     system->time = 0.0f;
     system->active_particle_count = 0;
-    system->emitter_count = 0;
 
     // Initialize all particles as inactive
     for (int i = 0; i < MAX_FIRE_PARTICLES; i++) {
         system->particles[i].active = false;
-    }
-
-    // Add initial emitter if position is provided
-    if (emitter_x != 0.0f || emitter_y != 0.0f) {
-        particle_fire_add_emitter(system, emitter_x, emitter_y);
     }
 }
 
@@ -105,21 +93,44 @@ void particle_fire_cleanup(ParticleFireSystem *system) {
     (void)system;
 }
 
-void particle_fire_update(ParticleFireSystem *system, float dt) {
+void particle_fire_update(ParticleFireSystem *system, Fire *fires_buf, int max_fires, float dt) {
     system->time += dt;
 
-    // This is dependent on fps right now but we have this locked to 60
-    // TODO: could we use a ticks timer instead? I guess that'd limit it to
-    // 1 particle a frame.
-    for (int e = 0; e < system->emitter_count; e++) {
-        FireEmitter *emitter = &system->emitters[e];
-        for (int i = 0; i < emitter->particles_per_frame; i++) {
-            // TODO: calculate how many particles should be spawned this frame
-            // dependent on health.
-            // How do we do this? We don't associate emitters with their fires.
-            // Why don't we include the emitters in the fire struct so we can
-            // just iterate through the fires?
-            spawn_particle(system);
+    // Iterate through all fires
+    for (int i = 0; i < max_fires; i++) {
+        Fire *fire = &fires_buf[i];
+
+        // Skip inactive or dead fires
+        if (!fire->active || fire->health <= 0) {
+            continue;
+        }
+
+        // Update emitter position (in case fire moved)
+        fire->emitter.x = fire->x + fire->w / 2.0f;
+        fire->emitter.y = fire->y + fire->h / 2.0f;
+
+        // Calculate desired particles per frame based on health
+        float health_ratio = fire->health / fire->max_health;
+        float particles_per_frame = 0.2f + (health_ratio * 7.8f);  // 0.2 - 8.0 range
+
+        // Convert to spawn interval (seconds between spawns)
+        // At 60fps, 1 frame = 1/60 second
+        // particles_per_frame = particles / (1/60 seconds)
+        // spawn_interval = (1/60) / particles_per_frame
+        fire->emitter.spawn_interval = (1.0f / 60.0f) / particles_per_frame;
+
+        // Accumulate time
+        fire->emitter.time_since_spawn += dt;
+
+        // Spawn particles while enough time has passed
+        while (fire->emitter.time_since_spawn >= fire->emitter.spawn_interval) {
+            spawn_particle_from_emitter(system, &fire->emitter);
+            fire->emitter.time_since_spawn -= fire->emitter.spawn_interval;
+        }
+
+        // Clamp time_since_spawn to prevent unbounded growth
+        if (fire->emitter.time_since_spawn > fire->emitter.spawn_interval * 10.0f) {
+            fire->emitter.time_since_spawn = fire->emitter.spawn_interval * 10.0f;
         }
     }
 
@@ -208,31 +219,4 @@ void particle_fire_render(ParticleFireSystem *system, SDL_Renderer *renderer, Ca
     }
 }
 
-void particle_fire_set_emitter_position(ParticleFireSystem *system, float x, float y) {
-    if (system->emitter_count > 0) {
-        system->emitters[0].x = x;
-        system->emitters[0].y = y;
-    }
-}
 
-void particle_fire_set_spawn_rate(ParticleFireSystem *system, int particles_per_frame) {
-    if (system->emitter_count > 0) {
-        system->emitters[0].particles_per_frame = particles_per_frame;
-    }
-}
-
-void particle_fire_add_emitter(ParticleFireSystem *system, float x, float y) {
-    if (system->emitter_count >= MAX_FIRE_EMITTERS) return;
-
-    FireEmitter *emitter = &system->emitters[system->emitter_count];
-    emitter->x = x;
-    emitter->y = y;
-    emitter->particles_per_frame = 3;  // Fewer per emitter since we have many
-    emitter->spawn_spread = 15.0f;
-
-    system->emitter_count++;
-}
-
-void particle_fire_clear_emitters(ParticleFireSystem *system) {
-    system->emitter_count = 0;
-}

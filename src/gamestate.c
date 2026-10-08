@@ -69,8 +69,8 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
 
     state->camera = (Camera){0, 0, window_width, window_height};
 
-    // Initialize particle fire system (starts with no emitters)
-    particle_fire_init(&state->fire_particles, 0, 0);
+    // Initialize particle fire system (emitters are in Fire structs)
+    particle_fire_init(&state->fire_particles);
 }
 
 void simulate_gamestate(GameState *state, float dt) {
@@ -79,21 +79,9 @@ void simulate_gamestate(GameState *state, float dt) {
     check_water_fire_collisions(state);
     update_fires(state, dt);
 
-    // Sync particle fire emitters with active fires
-    particle_fire_clear_emitters(&state->fire_particles);
-
-    for (int i = 0; i < MAX_FIRES; i++) {
-        Fire *fire = &state->fires_buf[i];
-        if (fire->active && fire->health > 0) {
-            // Place emitter at center of fire
-            float emitter_x = fire->x + fire->w / 2.0f;
-            float emitter_y = fire->y + fire->h / 2.0f;
-            particle_fire_add_emitter(&state->fire_particles, emitter_x, emitter_y);
-        }
-    }
-
-    // Update particle system
-    particle_fire_update(&state->fire_particles, dt);
+    // TODO: Particles are included in here, but they should probably be moved
+    // to the renderer. Particles shouldn't be in view of gamestate at all.
+    particle_fire_update(&state->fire_particles, state->fires_buf, MAX_FIRES, dt);
 }
 
 void cleanup_gamestate(GameState *state) {
@@ -305,7 +293,8 @@ void update_fires(GameState *state, float dt){
             float seconds_since_put_out = (SDL_GetTicks() - fire->last_put_out) / 1000;
             float seconds_since_hit = (SDL_GetTicks() - fire->last_hit_with_water) / 1000;
 
-            bool can_be_hit = seconds_since_put_out > 0.5 && seconds_since_hit > 0.5;
+            //bool can_be_hit = seconds_since_put_out > 0.5 && seconds_since_hit > 0.5;
+            bool can_be_hit = seconds_since_put_out > 0.1 && seconds_since_hit > 0.1;
             // if(is_fire_alive(neighbor) && seconds > 0.5){
             if(is_fire_alive(neighbor) && can_be_hit){
             // TODO: update this to be dynamic based on how active
