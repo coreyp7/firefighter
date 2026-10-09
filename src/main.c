@@ -16,6 +16,7 @@
 #include "random_utils.h"
 #include "level_io.h"
 #include "particle_fire.h"
+#include "math_utils.h"
 
 typedef uint32_t uint32;
 
@@ -88,11 +89,15 @@ int main(int argc, char *argv[]) {
         last_state_update = SDL_GetTicks();
         simulate_gamestate(&state, &action_list, dt);
 
-        // Update camera to follow player in play mode
-        // TODO: make this lerp instead of instant movement.
+        // TODO: should be somewhere else
         if (!editor_is_active(&editor)) {
-            state.camera.x = state.player.x - (state.camera.w / 2);
-            state.camera.y = state.player.y - (state.camera.h / 2);
+            float target_x = state.player.x - (state.camera.w / 2);
+            float target_y = state.player.y - (state.camera.h / 2);
+            target_y -= 15;
+
+            float lerp_speed = 2.5f;
+            state.camera.x += (target_x - state.camera.x) * lerp_speed * dt;
+            state.camera.y += (target_y - state.camera.y) * lerp_speed * dt;
         }
 
         render_gamestate(&editor, &state);
