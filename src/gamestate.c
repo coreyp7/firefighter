@@ -1,4 +1,6 @@
 #include "gamestate.h"
+#include "input.h"
+#include "input_config.h"
 #include "random_utils.h"
 #include "math_utils.h"
 #include "water_particles.h"
@@ -19,6 +21,7 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->player.cursor_y = 0.0;
     state->player.is_facing_left = false;
     state->player.is_shooting_water = false;
+    state->player.move_direction = 0;
 
     state->particle_count = 0;
 
@@ -73,15 +76,69 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     particle_fire_init(&state->fire_particles);
 }
 
-void simulate_gamestate(GameState *state, float dt) {
+void apply_player_actions(GameState *state, PlayerActionList *action_list) {
+    Player *player = &state->player;
+
+    // Reset move direction each frame
+    player->move_direction = 0;
+
+    // Process all actions in order (last action wins for conflicts)
+    for (int i = 0; i < action_list->count; i++) {
+        PlayerAction action = action_list->actions[i];
+
+        switch (action) {
+            case PLAYER_ACTION_MOVE_LEFT:
+                player->move_direction = -1;
+                break;
+
+            case PLAYER_ACTION_MOVE_RIGHT:
+                player->move_direction = 1;
+                break;
+
+            case PLAYER_ACTION_JUMP:
+                if (player->is_grounded) {
+                    player->yvel -= PLAYER_JUMP_FORCE;
+                }
+                break;
+
+            case PLAYER_ACTION_SHOOT_WATER:
+                player->is_shooting_water = true;
+                break;
+
+            case PLAYER_ACTION_NONE:
+            default:
+                break;
+        }
+    }
+
+    // If no shoot action this frame, stop shooting
+    bool has_shoot_action = false;
+    for (int i = 0; i < action_list->count; i++) {
+        if (action_list->actions[i] == PLAYER_ACTION_SHOOT_WATER) {
+            has_shoot_action = true;
+            break;
+        }
+    }
+    if (!has_shoot_action) {
+        player->is_shooting_water = false;
+    }
+}
+
+void simulate_gamestate(GameState *state, PlayerActionList *action_list, float dt) {
+    // apply input actions to our gamestate
+    apply_player_actions(state, action_list);
+
+    // Update state
     update_player(state, dt);
     simulate_water_particles(state, dt);
     check_water_fire_collisions(state);
     update_fires(state, dt);
 
     // TODO: Particles are included in here, but they should probably be moved
-    // to the renderer. Particles shouldn't be in view of gamestate at all.
+    // to the renderer. Particles shouldn't be in view of gamestate at all
+    // since all fires are just rects.
     particle_fire_update(&state->fire_particles, state->fires_buf, MAX_FIRES, dt);
+
 }
 
 void cleanup_gamestate(GameState *state) {
@@ -98,9 +155,41 @@ void update_player(GameState *state, float dt) {
     float oldx = player->x;
     float oldy = player->y;
 
+    // ============================================================
+    // HORIZONTAL MOVEMENT - Acceleration System
+    // ============================================================
+
+    if (player->move_direction != 0) {
+        // Player wants to move - accelerate
+        float accel_delta = PLAYER_ACCELERATION * dt;
+
+        if (player->move_direction > 0) {
+            // Moving right
+            if (player->xvel < PLAYER_MAX_SPEED) {
+                player->xvel = fminf(player->xvel + accel_delta, PLAYER_MAX_SPEED);
+            }
+        } else {
+            // Moving left
+            if (player->xvel > -PLAYER_MAX_SPEED) {
+                player->xvel = fmaxf(player->xvel - accel_delta, -PLAYER_MAX_SPEED);
+            }
+        }
+    } else {
+        // No input - decelerate to stop
+        if (fabsf(player->xvel) > 0.01f) {
+            float decel_delta = PLAYER_DECELERATION * dt;
+            if (player->xvel > 0) {
+                player->xvel = fmaxf(player->xvel - decel_delta, 0.0f);
+            } else {
+                player->xvel = fminf(player->xvel + decel_delta, 0.0f);
+            }
+        } else {
+            player->xvel = 0.0f;
+        }
+    }
+
+    // Apply gravity
     player->yvel += PLAYER_GRAVITY * dt;
-    // TODO: improve logic around player x_vel on the ground with
-    // forces applied from water spray.
 
     // Check horizontal collisions
     player->x += player->xvel * dt;
@@ -552,6 +641,7 @@ void gamestate_switch_level(GameState *state, int new_level_index) {
     state->player.is_grounded = false;
     state->player.is_shooting_water = false;
     state->player.is_facing_left = false;
+    state->player.move_direction = 0;
 
     // 8. Reset camera (center on player)
     state->camera.x = state->player.x - state->camera.w / 2;

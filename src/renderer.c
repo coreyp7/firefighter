@@ -154,8 +154,6 @@ void render_gamestate(EditorState *editor, GameState *state){
                              &player_rect, 0.0, NULL, flipMode
     );
 
-    SDL
-
     // Render particle fires
     particle_fire_render(&state->fire_particles, renderer, state->camera);
 

@@ -31,6 +31,8 @@ typedef enum InputType {
 
     // Actions
     INPUT_SHOOT_WATER,
+    INPUT_SHOOT_WATER_DOWN,
+    INPUT_SHOOT_WATER_UP,
 
     // Editor
     INPUT_MOUSE_LEFT_CLICK,
@@ -70,21 +72,35 @@ typedef struct InputBuffer {
     int event_count;
     float mouse_x;
     float mouse_y;
-    bool space_held;
-
-    bool arrow_left_held;
-    bool arrow_right_held;
-    bool arrow_up_held;
-    bool arrow_down_held;
 } InputBuffer;
+
+// Player action types
+typedef enum PlayerAction {
+    PLAYER_ACTION_NONE,
+    PLAYER_ACTION_MOVE_LEFT,
+    PLAYER_ACTION_MOVE_RIGHT,
+    PLAYER_ACTION_JUMP,
+    PLAYER_ACTION_SHOOT_WATER,
+} PlayerAction;
+
+#define MAX_PLAYER_ACTIONS 16
+
+typedef struct PlayerActionList {
+    PlayerAction actions[MAX_PLAYER_ACTIONS];
+    int count;
+} PlayerActionList;
 
 void init_input_buffer(InputBuffer *buffer);
 void init_input_maps(void);
 void gather_input(InputBuffer *buffer, bool *isRunning);
 
+// Player action list functions
+void init_player_action_list(PlayerActionList *list);
+void add_player_action(PlayerActionList *list, PlayerAction action);
+
 // Main input processing functions
-void processInput(EditorState *editor, GameState *state, InputBuffer *input, float dt);
-void processPlayInput(GameState *state, InputBuffer *input);
+void processInput(EditorState *editor, GameState *state, InputBuffer *input, PlayerActionList *action_list, float dt);
+void processPlayInput(InputBuffer *input, PlayerActionList *action_list);
 void processEditorInput(EditorState *editor, GameState *state, InputBuffer *input, float dt);
 
 #endif

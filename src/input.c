@@ -23,14 +23,12 @@ static void mouse_handler(InputEvent *event, SDL_Event *sdl_event) {
     event->mouse_y = sdl_event->button.y;
 }
 
-// Mapping structure for input bindings
 typedef struct {
     InputType input_type;
     bool requires_debug;
     InputHandler handler;
 } InputMapping;
 
-// Hash maps for O(1) input lookups
 static HashMap key_down_map;
 static HashMap key_up_map;
 static HashMap mouse_map;
@@ -78,6 +76,10 @@ void init_input_maps(void) {
     mapping = (InputMapping){ INPUT_MOVE_DOWN_DOWN, false, default_handler };
     hashmap_put(&key_down_map, &key, &mapping);
 
+    key = SDLK_SPACE;
+    mapping = (InputMapping){ INPUT_SHOOT_WATER_DOWN, false, default_handler };
+    hashmap_put(&key_down_map, &key, &mapping);
+
     // Editor controls (debug only)
     key = SDLK_L;
     mapping = (InputMapping){ INPUT_EDITOR_LOAD, true, default_handler };
@@ -118,6 +120,10 @@ void init_input_maps(void) {
 
     key = SDLK_D;
     mapping = (InputMapping){ INPUT_MOVE_RIGHT_UP, false, default_handler };
+    hashmap_put(&key_up_map, &key, &mapping);
+
+    key = SDLK_SPACE;
+    mapping = (InputMapping){ INPUT_SHOOT_WATER_UP, false, default_handler };
     hashmap_put(&key_up_map, &key, &mapping);
 
     // Populate mouse mappings
@@ -191,52 +197,69 @@ void gather_input(InputBuffer *buffer, bool *isRunning) {
     }
 
     SDL_GetMouseState(&buffer->mouse_x, &buffer->mouse_y);
-
-    // BAD: The way we're checking inputs is pretty inconsistent and all over
-    // the place. This works for now but can be organized later.
-    const bool *key_states = SDL_GetKeyboardState(NULL);
-    buffer->space_held = key_states[SDL_SCANCODE_SPACE];
-    buffer->arrow_left_held = key_states[SDL_SCANCODE_LEFT];
-    buffer->arrow_right_held = key_states[SDL_SCANCODE_RIGHT];
-    buffer->arrow_up_held = key_states[SDL_SCANCODE_UP];
-    buffer->arrow_down_held = key_states[SDL_SCANCODE_DOWN];
 }
 
+// Player action list functions
+void init_player_action_list(PlayerActionList *list) {
+    list->count = 0;
+}
 
-void processPlayInput(GameState *state, InputBuffer *input) {
-    Player *player = &state->player;
+void add_player_action(PlayerActionList *list, PlayerAction action) {
+    if (list->count < MAX_PLAYER_ACTIONS) {
+        list->actions[list->count++] = action;
+    }
+}
 
-    // Process input events
+void processPlayInput(InputBuffer *input, PlayerActionList *action_list) {
+    init_player_action_list(action_list);
+
+    // Track held state for continuous actions
+    static bool left_held = false;
+    static bool right_held = false;
+    static bool space_held = false;
+
+    // Process events to update held state
     for (int i = 0; i < input->event_count; i++) {
         InputEvent *event = &input->events[i];
 
         switch (event->type) {
             case INPUT_MOVE_LEFT_DOWN:
-                player->xvel = -PLAYER_WALK_SPEED;
+                left_held = true;
                 break;
-
-            case INPUT_MOVE_RIGHT_DOWN:
-                player->xvel = PLAYER_WALK_SPEED;
-                break;
-
             case INPUT_MOVE_LEFT_UP:
+                left_held = false;
+                break;
+            case INPUT_MOVE_RIGHT_DOWN:
+                right_held = true;
+                break;
             case INPUT_MOVE_RIGHT_UP:
-                player->xvel = 0;
+                right_held = false;
                 break;
-
             case INPUT_JUMP:
-                if (state->player.is_grounded) {
-                    player->yvel -= PLAYER_JUMP_FORCE;
-                }
+                // One-shot action, add immediately
+                add_player_action(action_list, PLAYER_ACTION_JUMP);
                 break;
-
+            case INPUT_SHOOT_WATER_DOWN:
+                space_held = true;
+                break;
+            case INPUT_SHOOT_WATER_UP:
+                space_held = false;
+                break;
             default:
                 break;
         }
     }
 
-    // Update player shooting state based on spacebar
-    player->is_shooting_water = input->space_held;
+    // Add continuous actions based on held state
+    if (left_held) {
+        add_player_action(action_list, PLAYER_ACTION_MOVE_LEFT);
+    }
+    if (right_held) {
+        add_player_action(action_list, PLAYER_ACTION_MOVE_RIGHT);
+    }
+    if (space_held) {
+        add_player_action(action_list, PLAYER_ACTION_SHOOT_WATER);
+    }
 }
 
 void processEditorInput(EditorState *editor, GameState *state, InputBuffer *input, float dt) {
@@ -322,11 +345,10 @@ void processEditorInput(EditorState *editor, GameState *state, InputBuffer *inpu
         }
     }
 
-    // Camera movement in editor mode
-    editor_update_camera(editor, state, input, dt);
 }
 
-void processInput(EditorState *editor, GameState *state, InputBuffer *input, float dt) {
+void processInput(EditorState *editor, GameState *state, InputBuffer *input,
+                  PlayerActionList *action_list, float dt) {
     Player *player = &state->player;
 
     // Process each input event
@@ -355,7 +377,8 @@ void processInput(EditorState *editor, GameState *state, InputBuffer *input, flo
     // Branch based on current mode
     if (editor_is_active(editor)) {
         processEditorInput(editor, state, input, dt);
+        init_player_action_list(action_list);  // No actions in editor mode
     } else {
-        processPlayInput(state, input);
+        processPlayInput(input, action_list);
     }
 }

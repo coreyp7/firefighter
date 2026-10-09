@@ -5,4 +5,9 @@
 #define PLAYER_JUMP_FORCE 350.0f
 #define EDITOR_CAMERA_SPEED 500.0f
 
+// Acceleration system
+#define PLAYER_ACCELERATION 1200.0f
+#define PLAYER_DECELERATION 1500.0f
+#define PLAYER_MAX_SPEED 250.0f
+
 #endif

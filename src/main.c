@@ -67,6 +67,8 @@ int main(int argc, char *argv[]) {
     init_input_buffer(&input_buffer);
     init_input_maps();
 
+    PlayerActionList action_list;
+
     SDL_ShowWindow(window);
     init_water_particles();
     if (debug) {
@@ -80,11 +82,11 @@ int main(int argc, char *argv[]) {
 
         gather_input(&input_buffer, &isRunning);
 
-        processInput(&editor, &state, &input_buffer, dt);
+        processInput(&editor, &state, &input_buffer, &action_list, dt);
 
         dt = (SDL_GetTicks() - last_state_update) / 1000.f;
         last_state_update = SDL_GetTicks();
-        simulate_gamestate(&state, dt);
+        simulate_gamestate(&state, &action_list, dt);
 
         // Update camera to follow player in play mode
         // TODO: make this lerp instead of instant movement.
@@ -104,6 +106,7 @@ int main(int argc, char *argv[]) {
 
         SDL_RenderPresent(renderer);
         uint32 required_length_of_frame = 1000.0 / 60.0; // 60 fps
+        //uint32 required_length_of_frame = 1000.0 / 120.0; // 120 fps
         if(time_of_frame < required_length_of_frame){
             uint32 time_to_wait = required_length_of_frame - time_of_frame;
             SDL_Delay(time_to_wait);

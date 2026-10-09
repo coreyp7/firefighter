@@ -27,6 +27,7 @@ typedef struct Player {
     bool is_grounded;
     bool is_facing_left;
     bool is_shooting_water;
+    int move_direction;  // -1 (left), 0 (none), 1 (right)
 } Player;
 
 typedef struct WaterParticle {
@@ -68,11 +69,15 @@ typedef struct GameState {
     int current_level_index;
 } GameState;
 
+// Forward declaration for PlayerActionList
+typedef struct PlayerActionList PlayerActionList;
+
 void init_gamestate(GameState *state, int window_width, int window_height);
-void simulate_gamestate(GameState *state, float dt);
+void simulate_gamestate(GameState *state, PlayerActionList *action_list, float dt);
 void cleanup_gamestate(GameState *state);
 bool is_colliding(SDL_FRect a, SDL_FRect b);
 void update_player(GameState *state, float dt);
+void apply_player_actions(GameState *state, PlayerActionList *action_list);
 void check_water_fire_collisions(GameState *state);
 void update_fires(GameState *state, float dt);
 
