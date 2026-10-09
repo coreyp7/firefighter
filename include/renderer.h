@@ -25,6 +25,7 @@ void cleanup_renderer(void);
 
 void render_gamestate(EditorState *editor, GameState *state);
 void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *player, Camera camera);
+void render_hose(SDL_Renderer *renderer, Player *player, Camera camera);
 void render_water_stream(SDL_Renderer *renderer, GameState *state);
 void render_water_particles(SDL_Renderer *renderer, GameState *state);
 void render_block(SDL_Renderer *renderer, int sprite_id, Block block, Camera camera);

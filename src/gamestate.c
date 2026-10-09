@@ -280,7 +280,7 @@ void update_player(GameState *state, float dt) {
         // out of the shoulder, not the center of your body.
         // To be even more accurate we'd alter x depending on facing direction,
         // but let's only do that if this feels weird.
-        player_pos_relative.y -= 15;
+        player_pos_relative.y -= 30;
 
         float dx = player->cursor_x - player_pos_relative.x;
         float dy = player->cursor_y - player_pos_relative.y;
@@ -292,7 +292,7 @@ void update_player(GameState *state, float dt) {
         // #2 get point along vector path specific length away.
         // formula for point along vector: point + (normal * distance)
         // Do this for x & y separately
-        float hose_distance_from_player_body = 40;
+        float hose_distance_from_player_body = 15;
         float hose_x = player_pos_relative.x + (x_normal * hose_distance_from_player_body);
         float hose_y = player_pos_relative.y + (y_normal * hose_distance_from_player_body);
         float hose_dx = player->cursor_x - hose_x;

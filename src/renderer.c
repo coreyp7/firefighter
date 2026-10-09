@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <stdio.h>
+#include <math.h>
 
 // Global renderer state
 SDL_Renderer *renderer = NULL;
@@ -13,6 +14,7 @@ SDL_Texture *bush_sprite_sheet = NULL;
 SDL_Texture *ground_sprite_sheet = NULL;
 SDL_Texture *fire_sprite_sheet = NULL;
 SDL_Texture *player_sprite_sheet = NULL;
+SDL_Texture *hose_head_texture = NULL;
 
 SDL_Rect fire_sprites[10] = {
     {38, 144, 72, 40}
@@ -96,6 +98,12 @@ bool init_renderer(SDL_Window *window) {
         return false;
     }
 
+    if (!loadImage(renderer, &hose_head_texture, "img/hosehead.png")) {
+        SDL_Log("ERROR: Failed to load hose head texture");
+        cleanup_renderer();
+        return false;
+    }
+
     SDL_Log("Renderer initialized successfully");
     return true;
 }
@@ -114,6 +122,11 @@ void cleanup_renderer(void) {
     if (ground_sprite_sheet) {
         SDL_DestroyTexture(ground_sprite_sheet);
         ground_sprite_sheet = NULL;
+    }
+
+    if (hose_head_texture) {
+        SDL_DestroyTexture(hose_head_texture);
+        hose_head_texture = NULL;
     }
 
     if (renderer) {
@@ -138,6 +151,7 @@ void render_gamestate(EditorState *editor, GameState *state){
     }
 
     // Player render stuff
+    // TODO: put into function
     SDL_FRect player_rect = {state->player.x, state->player.y, 95, 95};
     SDL_FlipMode flipMode = SDL_FLIP_NONE;
     if(state->player.is_facing_left){
@@ -154,7 +168,8 @@ void render_gamestate(EditorState *editor, GameState *state){
                              &player_rect, 0.0, NULL, flipMode
     );
 
-    // Render particle fires
+    render_hose(renderer, &state->player, state->camera);
+
     particle_fire_render(&state->fire_particles, renderer, state->camera);
 
     render_fires(renderer, state); // leaving just for debug health view
@@ -184,9 +199,45 @@ void render_player(SDL_Renderer *renderer, SDL_Texture *player_texture, Player *
     SDL_RenderTextureRotated(renderer, player_texture, NULL, &player_rect, 0.0, NULL, flipMode);
 }
 
+void render_hose(SDL_Renderer *renderer, Player *player, Camera camera) {
+    // Head is roughly at the top third of the player sprite
+    SDL_FPoint player_pos = convert_pos_to_camera_pos(camera, player->x, player->y);
+    float player_center_x = player_pos.x + (player->w / 2);
+    float player_head_y = player_pos.y + (player->h / 4);
+
+    // Calculate angle to cursor from head position
+    float dx = player->cursor_x - player_center_x;
+    float dy = player->cursor_y - player_head_y;
+    float angle_radians = atan2f(dy, dx);
+
+    // Convert to degrees for SDL (SDL uses degrees, atan2 returns radians)
+    float angle_degrees = angle_radians * (180.0f / M_PI);
+    angle_degrees -= 15.0f; // to align with vector to cursor
+
+    // Using 80x80 as size for hose head
+    float hose_size = 80.0f;
+    SDL_FRect hose_rect = {
+        player_center_x - (hose_size / 2),
+        player_head_y - (hose_size / 2),
+        hose_size,
+        hose_size
+    };
+
+    SDL_FPoint pivot = {hose_size / 2, hose_size / 2};
+
+    SDL_FlipMode flipMode = SDL_FLIP_NONE;
+    SDL_RenderTextureRotated(renderer,
+                            hose_head_texture,
+                            NULL,
+                            &hose_rect,
+                            angle_degrees,
+                            &pivot,
+                            flipMode);
+}
+
 void render_water_particles(SDL_Renderer *renderer, GameState *state) {
     SDL_SetRenderDrawColor(renderer, 92, 181, 225, 255);
-    //SDL_SetRenderDrawColor(renderer, 150, 250, 0, 255);
+    //SDL_SetRenderDrawColor(renderer, 255, 234, 0, 255);
     for (int i = 0; i < state->particle_count; i++) {
         if (!state->particles[i].active) {
             continue;
