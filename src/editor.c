@@ -81,25 +81,6 @@ void editor_handle_right_click(EditorState *editor, GameState *game, float world
     }
 }
 
-void editor_update_camera(EditorState *editor, GameState *game, InputBuffer *input, float dt) {
-    // TODO: Implement editor camera movement using arrow key events
-    // For now, camera movement is disabled in editor mode
-    for(int i=0; i<input->event_count; i++){
-        InputEvent event = input->events[i];
-        InputType input_type = event.type;
-        SDL_Log("editor_update_camera: %s\n", input_type);
-
-        switch(input_type){
-            case INPUT_MOVE_LEFT_DOWN:
-                game->camera.x = -editor->camera_move_speed;
-                break;
-            case INPUT_MOVE_RIGHT_DOWN:
-                game->camera.x = editor->camera_move_speed;
-                break;
-        }
-    }
-
-}
 
 Fire* editor_get_fire_at_position(GameState *game, float world_x, float world_y) {
     return gamestate_find_fire_at_position(game, world_x, world_y);

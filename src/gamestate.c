@@ -267,6 +267,7 @@ void update_player(GameState *state, float dt) {
     }
 
     // Handle water shooting
+    // TODO: move this above the fire boosts
     if (player->is_shooting_water) {
         float dx = player->cursor_x - player_pos_relative.x;
         float dy = player->cursor_y - player_pos_relative.y;
@@ -282,8 +283,10 @@ void update_player(GameState *state, float dt) {
         vec2_normalize(&x_normal, &y_normal);
 
         // TODO: put these into constants
+        // Apply forces to player depending on where water is shooting
         if(y_normal > 0){
-            player->yvel += (-y_normal) * 10;
+            //player->yvel += (-y_normal) * 10;
+            player->yvel += (-y_normal) * 9.5;
         } else if (y_normal < 0){
             //player->yvel += (-y_normal) * 3;
         }

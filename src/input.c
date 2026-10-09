@@ -345,6 +345,20 @@ void processEditorInput(EditorState *editor, GameState *state, InputBuffer *inpu
         }
     }
 
+    // Check arrow key state directly for continuous camera movement
+    const bool *key_states = SDL_GetKeyboardState(NULL);
+    if (key_states[SDL_SCANCODE_LEFT]) {
+        state->camera.x -= EDITOR_CAMERA_SPEED * dt;
+    }
+    if (key_states[SDL_SCANCODE_RIGHT]) {
+        state->camera.x += EDITOR_CAMERA_SPEED * dt;
+    }
+    if (key_states[SDL_SCANCODE_UP]) {
+        state->camera.y -= EDITOR_CAMERA_SPEED * dt;
+    }
+    if (key_states[SDL_SCANCODE_DOWN]) {
+        state->camera.y += EDITOR_CAMERA_SPEED * dt;
+    }
 }
 
 void processInput(EditorState *editor, GameState *state, InputBuffer *input,
