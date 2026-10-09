@@ -137,7 +137,7 @@ void render_gamestate(EditorState *editor, GameState *state){
         render_block(renderer, block->sprite_id, *block, state->camera);
     }
 
-    //render_player(renderer, player_texture, &state->player, state->camera);
+    // Player render stuff
     SDL_FRect player_rect = {state->player.x, state->player.y, 95, 95};
     SDL_FlipMode flipMode = SDL_FLIP_NONE;
     if(state->player.is_facing_left){
@@ -154,22 +154,7 @@ void render_gamestate(EditorState *editor, GameState *state){
                              &player_rect, 0.0, NULL, flipMode
     );
 
-    // SDL_RenderTextureRotated(renderer,
-    //                          player_texture,
-    //                          NULL,
-    //                          &player_rect, 0.0, NULL, flipMode
-    // );
-
-    // SDL_FRect srcrect = {288, 32, 200, 180};
-    // SDL_FRect destrect = {250, 75, 150, 150};
-    // SDL_RenderTexture(
-    //     renderer,
-    //     bush_sprite_sheet,
-    //     &srcrect,
-    //     &destrect
-    // );
-    // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    // SDL_RenderRect(renderer, &destrect);
+    SDL
 
     // Render particle fires
     particle_fire_render(&state->fire_particles, renderer, state->camera);

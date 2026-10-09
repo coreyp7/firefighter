@@ -17,6 +17,7 @@ extern SDL_Texture *player_texture;
 extern SDL_Texture *bush_sprite_sheet;
 extern SDL_Texture *ground_sprite_sheet;
 extern SDL_Texture *player_sprite_sheet;
+extern SDL_Texture *player_arm_holding_hose;
 
 // Renderer lifecycle
 bool init_renderer(SDL_Window *window);
