@@ -15,6 +15,8 @@
 void init_gamestate(GameState *state, int window_width, int window_height) {
     state->player.x = 50.0;
     state->player.y = 400.0;
+    state->player.w = 95.0;
+    state->player.h = 95.0;
     state->player.xvel = 0.0;
     state->player.yvel = 0.0;
     state->player.cursor_x = 0.0;
@@ -232,6 +234,9 @@ void update_player(GameState *state, float dt) {
     SDL_FPoint player_pos_relative = convert_pos_to_camera_pos(
         state->camera, player->x, player->y
     );
+    player_pos_relative.x += (player->w/2);
+    player_pos_relative.y += (player->h/2);
+
     if(player_pos_relative.x < player->cursor_x){
         player->is_facing_left = false;
     } else {
@@ -269,18 +274,39 @@ void update_player(GameState *state, float dt) {
     // Handle water shooting
     // TODO: move this above the fire boosts
     if (player->is_shooting_water) {
+        // #1 get normal vector from player to mouse pos
+
+        // This is to make it look a little nicer. We should have the arm coming
+        // out of the shoulder, not the center of your body.
+        // To be even more accurate we'd alter x depending on facing direction,
+        // but let's only do that if this feels weird.
+        player_pos_relative.y -= 15;
+
         float dx = player->cursor_x - player_pos_relative.x;
         float dy = player->cursor_y - player_pos_relative.y;
-
-        //float noise = random_float_range(-0.5f, 0.5f);
-        float noise = random_float_range(-0.25f, 0.25f);
-        float angle = atan2f(dx, dy) + noise;
-        //float angle = atan2f(dx, dy);
-        shoot_water_particle(state, player->x, player->y, angle);
 
         float x_normal = dx;
         float y_normal = dy;
         vec2_normalize(&x_normal, &y_normal);
+
+        // #2 get point along vector path specific length away.
+        // formula for point along vector: point + (normal * distance)
+        // Do this for x & y separately
+        float hose_distance_from_player_body = 40;
+        float hose_x = player_pos_relative.x + (x_normal * hose_distance_from_player_body);
+        float hose_y = player_pos_relative.y + (y_normal * hose_distance_from_player_body);
+        float hose_dx = player->cursor_x - hose_x;
+        float hose_dy = player->cursor_y - hose_y;
+
+        // #3 Calculate angle with hose x,y, then pass to function to shoot water
+        float noise = random_float_range(-0.25f, 0.25f);
+        float angle = atan2f(hose_dx, hose_dy) + noise;
+
+        // Need to convert to world coordinates: all this math was done
+        // relative to the camera.
+        convert_camera_pos_to_global(state->camera, &hose_x, &hose_y);
+        shoot_water_particle(state, hose_x, hose_y, angle);
+
 
         // TODO: put these into constants
         // Apply forces to player depending on where water is shooting
