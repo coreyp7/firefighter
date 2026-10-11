@@ -14,6 +14,13 @@
 
 #define PLAYER_GRAVITY 700
 
+typedef enum PlayerState {
+    PLAYER_STATE_STANDING,
+    PLAYER_STATE_RUNNING_LEFT,
+    PLAYER_STATE_RUNNING_RIGHT,
+    PLAYER_STATE_JUMPING,
+    PLAYER_STATE_FALLING
+} PlayerState;
 
 typedef struct Player {
     float x;
@@ -27,7 +34,15 @@ typedef struct Player {
     bool is_grounded;
     bool is_facing_left;
     bool is_shooting_water;
+    // NOTE: shouldn't this just be an enum?
     int move_direction;  // -1 (left), 0 (none), 1 (right)
+
+    // For animation stuff.
+    // Current frame and timer probably shouldn't be in here, but put here
+    // for convenience during impl.
+    PlayerState state;
+    int current_frame; // Current frame index in animation array
+    float frame_timer_ms; // Time elapsed on current frame
 } Player;
 
 typedef struct WaterParticle {

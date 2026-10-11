@@ -2,6 +2,7 @@
 #include "editor.h"
 #include "camera.h"
 #include "debug.h"
+#include "player_animation.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <stdio.h>
@@ -32,7 +33,6 @@ SDL_Rect block_sprites[MAX_BLOCK_SPRITES] = {
 
 SDL_FRect player_sprite_sheet_rects[5] = {
     {159, 550, 230, 400},
-    //{0, 0, 1000, 500}
     {566, 531, 230, 400},
     {924, 540, 230, 400},
     {1238, 540, 230, 400}
@@ -161,9 +161,11 @@ void render_gamestate(EditorState *editor, GameState *state){
     player_rect.x = newpos.x;
     player_rect.y = newpos.y;
 
+    int sprite_index = get_player_sprite_index(&state->player);
+
     SDL_RenderTextureRotated(renderer,
                              player_sprite_sheet,
-                             &player_sprite_sheet_rects[0],
+                             &player_sprite_sheet_rects[sprite_index],
                              //&test_rect,
                              &player_rect, 0.0, NULL, flipMode
     );

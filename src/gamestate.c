@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "fire.h"
 #include "block.h"
+#include "player_animation.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,6 +25,11 @@ void init_gamestate(GameState *state, int window_width, int window_height) {
     state->player.is_facing_left = false;
     state->player.is_shooting_water = false;
     state->player.move_direction = 0;
+
+    // Initialize animation state
+    state->player.state = PLAYER_STATE_STANDING;
+    state->player.current_frame = 0;
+    state->player.frame_timer_ms = 0.0f;
 
     state->particle_count = 0;
 
@@ -132,6 +138,7 @@ void simulate_gamestate(GameState *state, PlayerActionList *action_list, float d
 
     // Update state
     update_player(state, dt);
+    update_player_animation(&state->player, dt);
     simulate_water_particles(state, dt);
     check_water_fire_collisions(state);
     update_fires(state, dt);
@@ -146,6 +153,37 @@ void simulate_gamestate(GameState *state, PlayerActionList *action_list, float d
 void cleanup_gamestate(GameState *state) {
     state->particle_count = 0;
     particle_fire_cleanup(&state->fire_particles);
+}
+
+// The current player state is only used for animation.
+// In future, we should really leverage this when handling player logic,
+// so we can check the state to determine what's possible or not (fst).
+void update_player_animation_state(Player *player) {
+    PlayerState old_state = player->state;
+
+    // Priority: jumping > falling > running > standing
+    if (!player->is_grounded && player->yvel < -50.0f) {
+        player->state = PLAYER_STATE_JUMPING;
+    }
+    else if (!player->is_grounded && player->yvel >= -50.0f) {
+        player->state = PLAYER_STATE_FALLING;
+    }
+    else if (player->is_grounded && fabsf(player->xvel) > 10.0f) {
+        if (player->xvel > 0) {
+            player->state = PLAYER_STATE_RUNNING_RIGHT;
+        } else {
+            player->state = PLAYER_STATE_RUNNING_LEFT;
+        }
+    }
+    else {
+        player->state = PLAYER_STATE_STANDING;
+    }
+
+    // Reset animation on state change
+    if (old_state != player->state) {
+        player->current_frame = 0;
+        player->frame_timer_ms = 0.0f;
+    }
 }
 
 // TODO: maybe split this up into some functions.
@@ -270,6 +308,8 @@ void update_player(GameState *state, float dt) {
             break;
         }
     }
+
+    update_player_animation_state(player);
 
     // Handle water shooting
     // TODO: move this above the fire boosts
